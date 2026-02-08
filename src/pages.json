@@ -1,0 +1,163 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "首页",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/auth/login",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/auth/register",
+      "style": {
+        "navigationBarTitleText": "注册",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/note/detail",
+      "style": {
+        "navigationBarTitleText": "笔记详情",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/note/publish",
+      "style": {
+        "navigationBarTitleText": "发布笔记",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/discover/index",
+      "style": {
+        "navigationBarTitleText": "发现",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/message/index",
+      "style": {
+        "navigationBarTitleText": "消息",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user/index",
+      "style": {
+        "navigationBarTitleText": "我的",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user/edit-profile",
+      "style": {
+        "navigationBarTitleText": "编辑资料",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user/my-notes",
+      "style": {
+        "navigationBarTitleText": "我的笔记",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user/my-favorites",
+      "style": {
+        "navigationBarTitleText": "我的收藏",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user/my-subscriptions",
+      "style": {
+        "navigationBarTitleText": "我的订阅",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user/my-subscribers",
+      "style": {
+        "navigationBarTitleText": "我的粉丝",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user/my-orders",
+      "style": {
+        "navigationBarTitleText": "我的订单",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user/transactions",
+      "style": {
+        "navigationBarTitleText": "交易明细",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user/withdraw",
+      "style": {
+        "navigationBarTitleText": "提现",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user/creator-settings",
+      "style": {
+        "navigationBarTitleText": "创作者设置",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user/profile",
+      "style": {
+        "navigationBarTitleText": "创作者主页",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user/settings",
+      "style": {
+        "navigationBarTitleText": "设置",
+        "navigationStyle": "custom"
+      }
+    }
+  ],
+  "tabBar": {
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/discover/index",
+        "text": "发现"
+      },
+      {
+        "pagePath": "pages/message/index",
+        "text": "消息"
+      },
+      {
+        "pagePath": "pages/user/index",
+        "text": "我的"
+      }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "OnlyStudents",
+    "navigationBarBackgroundColor": "#FDFCF8",
+    "backgroundColor": "#FDFCF8"
+  }
+}

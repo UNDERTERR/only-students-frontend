@@ -1,0 +1,208 @@
+// 统一响应结构
+export interface ApiResponse<T> {
+  code: number
+  message: string
+  data: T
+  timestamp: number
+}
+
+// 用户相关类型
+export interface UserInfo {
+  id: number
+  username: string
+  email?: string
+  phone?: string
+  nickname: string
+  avatar?: string
+  bio?: string
+  educationLevel?: number
+  schoolId?: number
+  schoolName?: string
+  isCreator: number
+  lastLoginTime?: string
+  createdAt?: string
+}
+
+// 登录请求
+export interface LoginRequest {
+  username: string
+  password: string
+  deviceId?: string
+  deviceType?: number
+  deviceName?: string
+  ip?: string
+}
+
+// 登录响应
+export interface LoginResponse {
+  token: string
+  userInfo: UserInfo
+  expireTime: number
+}
+
+// 注册请求
+export interface RegisterRequest {
+  username: string
+  password: string
+  email?: string
+  phone?: string
+  nickname?: string
+  educationLevel?: number
+  schoolId?: number
+}
+
+// 笔记相关类型
+export interface Note {
+  id: number
+  userId: number
+  title: string
+  content: string
+  coverImage?: string
+  categoryId: number
+  categoryName?: string
+  visibility: number
+  price: number
+  isFree: boolean
+  originalFileId?: number
+  pdfFileId?: number
+  status: number
+  viewCount: number
+  likeCount: number
+  favoriteCount: number
+  commentCount: number
+  shareCount: number
+  hotScore?: number
+  educationLevel?: number
+  schoolId?: number
+  schoolName?: string
+  subject?: string
+  tags?: string[]
+  authorName?: string
+  authorAvatar?: string
+  publishTime?: string
+  createdAt: string
+}
+
+// 创建笔记请求
+export interface CreateNoteRequest {
+  title: string
+  content: string
+  categoryId: number
+  visibility: number
+  price?: number
+  educationLevel?: number
+  schoolId?: number
+  subject?: string
+  tags?: string[]
+}
+
+// 更新笔记请求
+export interface UpdateNoteRequest {
+  title?: string
+  content?: string
+  categoryId?: number
+  visibility?: number
+  price?: number
+  tags?: string[]
+}
+
+// 搜索参数
+export interface SearchParams {
+  keyword?: string
+  categoryId?: number
+  educationLevel?: number
+  priceType?: number // 0-全部 1-免费 2-付费
+  sortType?: number  // 0-最新 1-最热
+  page?: number
+  size?: number
+}
+
+// 分页结果
+export interface PageResult<T> {
+  list: T[]
+  total: number
+  page: number
+  size: number
+  totalPages: number
+}
+
+// 消息相关类型
+export interface Conversation {
+  id: number
+  userId: number
+  targetUserId: number
+  targetUserName: string
+  targetUserAvatar?: string
+  lastMessage: string
+  lastMessageTime: string
+  unreadCount: number
+  status: number
+}
+
+export interface Message {
+  id: number
+  conversationId: number
+  senderId: number
+  receiverId: number
+  content: string
+  type: number
+  status: number
+  createdAt: string
+}
+
+// 通知类型
+export interface Notification {
+  id: number
+  userId: number
+  type: number
+  title: string
+  content: string
+  targetId?: number
+  targetType?: number
+  isRead: boolean
+  createdAt: string
+}
+
+// 钱包相关
+export interface WalletInfo {
+  id: number
+  userId: number
+  balance: number
+  totalIncome: number
+  totalWithdraw: number
+  status: number
+}
+
+export interface WalletTransaction {
+  id: number
+  walletId: number
+  type: number
+  amount: number
+  balance: number
+  relatedId?: number
+  relatedType?: string
+  description?: string
+  createdAt: string
+}
+
+// 订阅相关
+export interface SubscriptionConfig {
+  id: number
+  creatorId: number
+  price: number
+  period: number
+  description?: string
+  status: number
+}
+
+export interface Subscription {
+  id: number
+  subscriberId: number
+  creatorId: number
+  creatorName?: string
+  creatorAvatar?: string
+  price: number
+  startTime: string
+  endTime: string
+  status: number
+}
