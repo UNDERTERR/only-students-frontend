@@ -132,6 +132,13 @@
         "navigationBarTitleText": "设置",
         "navigationStyle": "custom"
       }
+    },
+    {
+      "path": "pages/report/submit",
+      "style": {
+        "navigationBarTitleText": "举报",
+        "navigationStyle": "custom"
+      }
     }
   ],
   "tabBar": {
