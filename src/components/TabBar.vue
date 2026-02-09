@@ -51,13 +51,20 @@ const tabs = ref([
 ])
 
 const switchTab = (index: number) => {
-  if (index === 0) {
-    // 已经在首页
+  const tab = tabs.value[index]
+
+  // 获取当前页面路径
+  const pages = getCurrentPages()
+  const currentPage = pages[pages.length - 1]
+  const currentPath = currentPage ? '/' + currentPage.route : ''
+
+  // 如果已经在目标页面，就不跳转
+  if (currentPath === tab.path) {
     return
   }
 
-  const tab = tabs.value[index]
-  uni.switchTab({
+  // 使用 redirectTo 跳转（因为没有配置 tabBar）
+  uni.redirectTo({
     url: tab.path
   })
 }
@@ -69,33 +76,36 @@ const switchTab = (index: number) => {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 64px;
+  height: 52px;
   background: var(--bg-card);
   border-top: 1px solid var(--border-light);
   display: flex;
   justify-content: space-around;
   align-items: center;
   padding-bottom: env(safe-area-inset-bottom);
-  z-index: 100;
+  z-index: 9999;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  isolation: isolate;
+  transform: translateZ(0);
 }
 
 .tab-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 8px 20px;
+  gap: 2px;
+  padding: 6px 16px;
   position: relative;
 }
 
 .tab-icon {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   color: var(--text-tertiary);
 }
 
 .tab-label {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-tertiary);
 }
 
@@ -110,10 +120,10 @@ const switchTab = (index: number) => {
 
 .tab-badge {
   position: absolute;
-  top: 6px;
-  right: 16px;
-  width: 8px;
-  height: 8px;
+  top: 4px;
+  right: 12px;
+  width: 6px;
+  height: 6px;
   background: var(--accent-coral);
   border-radius: 50%;
 }

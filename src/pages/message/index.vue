@@ -5,33 +5,58 @@
       <text class="nav-title">消息</text>
     </view>
 
+    <!-- 加载状态 -->
+    <view v-if="loading" class="loading-state">
+      <view class="spinner"></view>
+      <text>加载中...</text>
+    </view>
+
+    <!-- 空状态 -->
+    <view v-else-if="!loading && conversations.length === 0 && notifications.length === 0" class="empty-state">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+      </svg>
+      <text class="empty-text">暂无消息</text>
+      <text class="empty-subtext">当有人给您发消息时，会显示在这里</text>
+    </view>
+
     <!-- 消息列表 -->
-    <scroll-view scroll-y class="message-list">
+    <scroll-view v-else scroll-y class="message-list" @scrolltolower="loadMore">
+      <!-- 会话列表 -->
       <view
-        v-for="msg in messages"
-        :key="msg.id"
+        v-for="conv in conversations"
+        :key="conv.id"
         class="message-item"
-        @click="goToChat(msg)"
+        @click="goToChat(conv)"
       >
         <view class="msg-avatar-wrapper">
-          <image :src="msg.avatar" class="msg-avatar" mode="aspectFill"/>
-          <view v-if="msg.unread > 0" class="msg-badge">{{ msg.unread > 99 ? '99+' : msg.unread }}</view>
+          <image 
+            :src="conv.targetUserAvatar || '/static/default-avatar.svg'" 
+            class="msg-avatar" 
+            mode="aspectFill"
+          />
+          <view v-if="conv.unreadCount > 0" class="msg-badge">
+            {{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}
+          </view>
         </view>
         <view class="msg-content">
           <view class="msg-header">
-            <text class="msg-name">{{ msg.name }}</text>
-            <text class="msg-time">{{ msg.time }}</text>
+            <text class="msg-name">{{ conv.targetUserName }}</text>
+            <text class="msg-time">{{ formatTime(conv.lastMessageTime) }}</text>
           </view>
-          <text class="msg-preview" :class="{ unread: msg.unread > 0 }">{{ msg.preview }}</text>
+          <text class="msg-preview" :class="{ unread: conv.unreadCount > 0 }">
+            {{ conv.lastMessage }}
+          </text>
         </view>
       </view>
 
       <!-- 系统通知 -->
-      <view class="section-title">系统通知</view>
+      <view v-if="notifications.length > 0" class="section-title">系统通知</view>
       <view
         v-for="notice in notifications"
         :key="notice.id"
         class="notice-item"
+        @click="handleNotificationClick(notice)"
       >
         <view class="notice-icon">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -41,9 +66,14 @@
         </view>
         <view class="notice-content">
           <text class="notice-title">{{ notice.title }}</text>
-          <text class="notice-desc">{{ notice.desc }}</text>
-          <text class="notice-time">{{ notice.time }}</text>
+          <text class="notice-desc">{{ notice.content }}</text>
+          <text class="notice-time">{{ formatTime(notice.createdAt) }}</text>
         </view>
+      </view>
+
+      <!-- 加载更多 -->
+      <view v-if="hasMore" class="load-more">
+        <text>加载更多...</text>
       </view>
     </scroll-view>
 
@@ -53,27 +83,145 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onActivated } from 'vue'
 import TabBar from '@/components/TabBar.vue'
+import { messageApi, notificationApi } from '@/api/message'
+import type { Conversation, Notification } from '@/types/api.types'
 
-const messages = ref([
-  { id: '1', name: '数学小王子', avatar: 'https://picsum.photos/100/100?random=1', preview: '你好，请问那份高考数学资料还有吗？', time: '10分钟前', unread: 2 },
-  { id: '2', name: '英语达人', avatar: 'https://picsum.photos/100/100?random=2', preview: '已发送雅思口语资料给你', time: '2小时前', unread: 0 },
-  { id: '3', name: '考研学姐', avatar: 'https://picsum.photos/100/100?random=3', preview: '谢谢你的订阅！有问题随时问我', time: '昨天', unread: 1 },
-  { id: '4', name: '编程大牛', avatar: 'https://picsum.photos/100/100?random=4', preview: 'Python课程更新了，记得查看', time: '2天前', unread: 0 }
-])
+// 数据状态
+const conversations = ref<Conversation[]>([])
+const notifications = ref<Notification[]>([])
+const loading = ref(false)
+const hasMore = ref(true)
+const currentPage = ref(1)
+const pageSize = 20
 
-const notifications = ref([
-  { id: '1', title: '笔记审核通过', desc: '你发布的《高考数学压轴题技巧》已通过审核', time: '3小时前' },
-  { id: '2', title: '收到新订阅', desc: '用户 @小明 订阅了你的创作者服务', time: '1天前' },
-  { id: '3', title: '收益到账', desc: '本月收益 ¥128.50 已到账', time: '2天前' }
-])
+// 格式化时间
+const formatTime = (timeStr: string): string => {
+  if (!timeStr) return ''
+  const date = new Date(timeStr)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  
+  // 小于1分钟
+  if (diff < 60000) {
+    return '刚刚'
+  }
+  // 小于1小时
+  if (diff < 3600000) {
+    return Math.floor(diff / 60000) + '分钟前'
+  }
+  // 小于24小时
+  if (diff < 86400000) {
+    return Math.floor(diff / 3600000) + '小时前'
+  }
+  // 小于7天
+  if (diff < 604800000) {
+    return Math.floor(diff / 86400000) + '天前'
+  }
+  // 超过7天显示日期
+  return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+}
 
-const goToChat = (msg: any) => {
+// 获取会话列表
+const fetchConversations = async () => {
+  try {
+    const data = await messageApi.getConversations()
+    conversations.value = data || []
+  } catch (error) {
+    console.error('获取会话列表失败:', error)
+    uni.showToast({ title: '获取消息失败', icon: 'none' })
+  }
+}
+
+// 获取通知列表
+const fetchNotifications = async (refresh = false) => {
+  if (refresh) {
+    currentPage.value = 1
+    notifications.value = []
+  }
+  
+  try {
+    const data = await notificationApi.getList(currentPage.value, pageSize)
+    if (data && data.length > 0) {
+      notifications.value.push(...data)
+      hasMore.value = data.length === pageSize
+    } else {
+      hasMore.value = false
+    }
+  } catch (error) {
+    console.error('获取通知列表失败:', error)
+  }
+}
+
+// 加载更多
+const loadMore = () => {
+  if (!hasMore.value || loading.value) return
+  currentPage.value++
+  fetchNotifications()
+}
+
+// 跳转到聊天页面
+const goToChat = (conv: Conversation) => {
+  // 标记会话为已读（减少未读数）
+  if (conv.unreadCount > 0) {
+    conv.unreadCount = 0
+  }
+  
   uni.navigateTo({
-    url: `/pages/message/chat?id=${msg.id}&name=${msg.name}`
+    url: `/pages/message/chat?id=${conv.id}&name=${encodeURIComponent(conv.targetUserName)}&targetId=${conv.targetUserId}`
   })
 }
+
+// 处理通知点击
+const handleNotificationClick = (notice: Notification) => {
+  // 标记为已读
+  if (!notice.isRead) {
+    notificationApi.markAsRead(notice.id).then(() => {
+      notice.isRead = true
+    }).catch(err => {
+      console.error('标记已读失败:', err)
+    })
+  }
+  
+  // 根据通知类型跳转到不同页面
+  if (notice.targetId && notice.targetType) {
+    switch (notice.targetType) {
+      case 1: // 笔记
+        uni.navigateTo({ url: `/pages/note/detail?id=${notice.targetId}` })
+        break
+      case 2: // 用户
+        uni.navigateTo({ url: `/pages/user/profile?id=${notice.targetId}` })
+        break
+      case 3: // 订单
+        uni.navigateTo({ url: '/pages/user/my-orders' })
+        break
+    }
+  }
+}
+
+// 初始化数据
+const initData = async () => {
+  loading.value = true
+  try {
+    await Promise.all([
+      fetchConversations(),
+      fetchNotifications(true)
+    ])
+  } finally {
+    loading.value = false
+  }
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+  initData()
+})
+
+// 页面激活时刷新数据（从其他页面返回时）
+onActivated(() => {
+  fetchConversations()
+})
 </script>
 
 <style scoped>
@@ -81,7 +229,7 @@ const goToChat = (msg: any) => {
   min-height: 100vh;
   background: var(--bg-primary);
   padding-top: 60px;
-  padding-bottom: 64px;
+  padding-bottom: calc(52px + env(safe-area-inset-bottom));
 }
 
 .page-nav {
@@ -104,6 +252,55 @@ const goToChat = (msg: any) => {
   color: var(--text-primary);
 }
 
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--text-secondary);
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-light);
+  border-top-color: var(--accent-warm);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--text-tertiary);
+}
+
+.empty-state svg {
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.empty-subtext {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
 .message-list {
   height: calc(100vh - 124px);
 }
@@ -116,6 +313,10 @@ const goToChat = (msg: any) => {
   border-bottom: 1px solid var(--border-light);
 }
 
+.message-item:active {
+  background: var(--bg-secondary);
+}
+
 .msg-avatar-wrapper {
   position: relative;
   margin-right: 12px;
@@ -125,6 +326,7 @@ const goToChat = (msg: any) => {
   width: 50px;
   height: 50px;
   border-radius: 50%;
+  background: var(--bg-secondary);
 }
 
 .msg-badge {
@@ -195,6 +397,10 @@ const goToChat = (msg: any) => {
   border-bottom: 1px solid var(--border-light);
 }
 
+.notice-item:active {
+  background: var(--bg-secondary);
+}
+
 .notice-icon {
   width: 44px;
   height: 44px;
@@ -205,10 +411,12 @@ const goToChat = (msg: any) => {
   justify-content: center;
   margin-right: 12px;
   color: var(--accent-warm);
+  flex-shrink: 0;
 }
 
 .notice-content {
   flex: 1;
+  overflow: hidden;
 }
 
 .notice-title {
@@ -224,10 +432,20 @@ const goToChat = (msg: any) => {
   color: var(--text-secondary);
   display: block;
   margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .notice-time {
   font-size: 11px;
   color: var(--text-tertiary);
+}
+
+.load-more {
+  text-align: center;
+  padding: 16px;
+  color: var(--text-tertiary);
+  font-size: 13px;
 }
 </style>

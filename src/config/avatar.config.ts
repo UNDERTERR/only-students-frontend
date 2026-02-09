@@ -1,0 +1,9 @@
+// 默认头像图片 - Base64编码的透明PNG
+// 这是一个简单的占位头像，实际项目中应该使用真实的默认头像图片文件
+export const defaultAvatarBase64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNGNUYzRUUiLz48Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjgwIiBmaWxsPSIjRThFNkUxIi8+PGNpcmNsZSBjeD0iMTAwIiBjeT0iODAiIHI9IjMwIiBmaWxsPSIjRDQ0Q0M0Ii8+PGVsbGlwc2UgY3g9IjEwMCIgY3k9IjE0NSIgcng9IjQ1IiByeT0iMzUiIGZpbGw9IiNENENGQzQiLz48L3N2Zz4='
+
+// 也可以直接使用在线占位图服务
+export const DEFAULT_AVATAR_URL = '/static/default-avatar.svg'
+
+// 备用：使用在线服务
+export const DEFAULT_AVATAR_FALLBACK = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=F5F3EE'

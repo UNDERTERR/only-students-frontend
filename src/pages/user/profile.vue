@@ -21,7 +21,7 @@
         <view class="creator-card">
           <view class="creator-header">
             <image
-              :src="creator.avatar || '/static/default-avatar.png'"
+              :src="creator.avatar || '/static/default-avatar.svg'"
               class="creator-avatar"
               mode="aspectFill"
             />

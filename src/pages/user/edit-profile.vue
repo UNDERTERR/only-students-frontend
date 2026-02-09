@@ -14,7 +14,7 @@
       <!-- 头像 -->
       <view class="avatar-section">
         <image
-          :src="form.avatar || '/static/default-avatar.png'"
+          :src="form.avatar || '/static/default-avatar.svg'"
           class="avatar"
           mode="aspectFill"
           @click="changeAvatar"
@@ -102,6 +102,7 @@
       <!-- 保存按钮 -->
       <view class="action-section">
         <button
+          type="button"
           class="save-btn"
           :class="{ loading: loading }"
           :disabled="loading"
@@ -118,7 +119,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
-import { uploadFile,userApi } from '@/api/index'
+import { uploadAvatar,userApi } from '@/api/index'
 
 const userStore = useUserStore()
 
@@ -177,7 +178,7 @@ const changeAvatar = async () => {
     uni.showLoading({ title: '上传中...' })
 
     // 2. 上传文件到服务器，获取URL
-    const file = await uploadFile(tempFilePath)
+    const file = await uploadAvatar(tempFilePath)
 
     form.value.avatar = file.fileUrl
 
@@ -196,7 +197,7 @@ const saveProfile = async () => {
 
   try {
     // 调用后端API更新用户信息
-    console.log(form.value.avatar)
+    console.log('开始更新用户信息，avatar:', form.value.avatar)
     const updatedUserInfo = await userApi.updateUser({
       nickname: form.value.nickname,
       avatar: form.value.avatar,
@@ -206,6 +207,8 @@ const saveProfile = async () => {
       schoolName: form.value.schoolName,
       educationLevel: form.value.educationLevel || undefined
     })
+    
+    console.log('更新用户信息成功:', updatedUserInfo)
 
     // 更新本地存储的用户信息
     userStore.userInfo = updatedUserInfo

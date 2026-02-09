@@ -137,7 +137,7 @@
             class="comment-item"
           >
             <image
-              :src="comment.userAvatar || '/static/default-avatar.png'"
+              :src="comment.userAvatar || '/static/default-avatar.svg'"
               class="comment-avatar"
               mode="aspectFill"
             />

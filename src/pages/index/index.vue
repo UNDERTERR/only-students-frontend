@@ -77,7 +77,7 @@ import { useNoteStore } from '@/stores/note'
 import NavBar from '@/components/NavBar.vue'
 import TabBar from '@/components/TabBar.vue'
 import Waterfall from '@/components/Waterfall.vue'
-import type { Note } from '@/stores/note'
+import type { Note } from '@/types/api.types'
 
 const noteStore = useNoteStore()
 
@@ -140,7 +140,7 @@ onMounted(() => {
   min-height: 100vh;
   background: var(--bg-primary);
   padding-top: 60px;
-  padding-bottom: 64px;
+  padding-bottom: calc(52px + env(safe-area-inset-bottom));
 }
 
 .category-section {
@@ -178,7 +178,8 @@ onMounted(() => {
 
 .content-area {
   margin-top: 60px;
-  height: calc(100vh - 120px);
+  height: calc(100vh - 108px - env(safe-area-inset-bottom));
+  padding-bottom: 20px;
 }
 
 .loading-more {

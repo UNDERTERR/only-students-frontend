@@ -28,7 +28,7 @@
       <!-- 用户信息卡片 -->
       <view class="user-card">
         <view class="user-header">
-          <image class="user-avatar" :src="userInfo?.avatar || '/static/default-avatar.png'" mode="aspectFill"/>
+          <image class="user-avatar" :src="userInfo?.avatar || '/static/default-avatar.svg'" mode="aspectFill"/>
           <view class="user-info">
             <text class="user-name">{{ userInfo?.nickname || userInfo?.username || '用户' }}</text>
             <text class="user-id">ID: {{ userInfo?.id }}</text>
@@ -211,7 +211,6 @@
     </template>
 
     <!-- 底部导航 -->
-     <!--TODO 底部有显示问题 -->
     <TabBar :current="3" />
   </view>
 </template>
@@ -358,7 +357,7 @@ const logout = () => {
   min-height: 100vh;
   background: var(--bg-primary);
   padding-top: 60px;
-  padding-bottom: 64px;
+  padding-bottom: calc(52px + env(safe-area-inset-bottom));
 }
 
 .page-nav {

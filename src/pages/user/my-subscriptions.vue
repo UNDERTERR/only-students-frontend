@@ -38,7 +38,7 @@
         >
           <view class="creator-info" @click="goToCreator(sub.creatorId)">
             <image
-              :src="sub.creatorAvatar || '/static/default-avatar.png'"
+              :src="sub.creatorAvatar || '/static/default-avatar.svg'"
               class="creator-avatar"
               mode="aspectFill"
             />

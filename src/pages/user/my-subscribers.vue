@@ -35,7 +35,7 @@
           @click="goToUser(sub.subscriberId)"
         >
           <image
-            :src="sub.subscriberAvatar || '/static/default-avatar.png'"
+            :src="sub.subscriberAvatar || '/static/default-avatar.svg'"
             class="subscriber-avatar"
             mode="aspectFill"
           />
