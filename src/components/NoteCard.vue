@@ -2,40 +2,40 @@
   <view class="note-card" @click="$emit('click')">
     <!-- 封面图 -->
     <view v-if="note.coverImage" class="note-cover">
-      <image 
-        :src="note.coverImage" 
+      <image
+        :src="note.coverImage"
         mode="widthFix"
         lazy-load
         class="cover-image"
       />
-      
+
       <!-- 分类标签 -->
       <view class="category-tag">{{ note.categoryName }}</view>
-      
+
       <!-- 价格标签 -->
       <view :class="['price-tag', { free: note.isFree }]">
         <text v-if="note.isFree">免费</text>
         <text v-else>¥{{ note.price }}</text>
       </view>
     </view>
-    
+
     <!-- 内容区 -->
     <view class="note-content">
       <text class="note-title">{{ note.title }}</text>
       <text v-if="note.summary" class="note-summary">{{ note.summary }}</text>
-      
+
       <!-- 底部信息 -->
       <view class="note-meta">
         <view class="note-author">
-          <image 
-            v-if="note.authorAvatar" 
-            :src="note.authorAvatar" 
+          <image
+            v-if="note.authorAvatar"
+            :src="note.authorAvatar"
             class="author-avatar"
             mode="aspectFill"
           />
           <text class="author-name">{{ note.authorName }}</text>
         </view>
-        
+
         <view class="note-stats">
           <view class="stat-item">
             <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -44,7 +44,7 @@
             </svg>
             <text>{{ formatNumber(note.viewCount) }}</text>
           </view>
-          
+
           <view class="stat-item">
             <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Note } from '../stores/note'
+import type { Note } from '@/stores/note'
 
 interface Props {
   note: Note

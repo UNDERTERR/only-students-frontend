@@ -9,7 +9,7 @@
       <text class="nav-title">举报</text>
       <view class="nav-right"></view>
     </view>
-    
+
     <scroll-view scroll-y class="content-area">
       <!-- 举报对象信息 -->
       <view class="target-section">
@@ -19,13 +19,13 @@
           <text class="target-id">ID: {{ targetId }}</text>
         </view>
       </view>
-      
+
       <!-- 举报原因 -->
       <view class="reason-section">
         <text class="section-title">举报原因</text>
         <view class="reason-list">
-          <view 
-            v-for="(reason, index) in reasons" 
+          <view
+            v-for="(reason, index) in reasons"
             :key="index"
             :class="['reason-item', { active: selectedReason === reason }]"
             @click="selectReason(reason)"
@@ -39,11 +39,11 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 详细描述 -->
       <view class="description-section">
         <text class="section-title">详细描述（选填）</text>
-        <textarea 
+        <textarea
           v-model="description"
           placeholder="请详细描述您遇到的问题，有助于我们更快处理..."
           class="description-input"
@@ -51,11 +51,11 @@
         />
         <text class="char-count">{{ description.length }}/500</text>
       </view>
-      
+
       <!-- 提交按钮 -->
       <view class="submit-section">
-        <button 
-          class="submit-btn" 
+        <button
+          class="submit-btn"
           :class="{ loading: loading }"
           :disabled="loading || !selectedReason"
           @click="submitReport"
@@ -70,7 +70,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { reportApi } from '../../api/note'
+import { reportApi } from '@/api/note'
 
 const targetType = ref<number>(0)
 const targetId = ref<number>(0)
@@ -100,10 +100,10 @@ const targetTypeText = computed(() => {
 onMounted(() => {
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1]
-  
+
   targetType.value = parseInt(currentPage.options?.targetType || '0')
   targetId.value = parseInt(currentPage.options?.targetId || '0')
-  
+
   if (!targetType.value || !targetId.value) {
     uni.showToast({ title: '参数错误', icon: 'none' })
     setTimeout(() => goBack(), 1500)
@@ -119,9 +119,9 @@ const submitReport = async () => {
     uni.showToast({ title: '请选择举报原因', icon: 'none' })
     return
   }
-  
+
   loading.value = true
-  
+
   try {
     await reportApi.submit(
       targetType.value,
@@ -129,13 +129,13 @@ const submitReport = async () => {
       selectedReason.value,
       description.value
     )
-    
-    uni.showToast({ 
-      title: '举报成功，我们会尽快处理', 
+
+    uni.showToast({
+      title: '举报成功，我们会尽快处理',
       icon: 'success',
       duration: 2000
     })
-    
+
     setTimeout(() => {
       goBack()
     }, 1500)

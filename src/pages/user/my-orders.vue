@@ -9,13 +9,13 @@
       <text class="nav-title">我的订单</text>
       <view class="nav-right"></view>
     </view>
-    
+
     <scroll-view scroll-y class="content-area">
       <view v-if="loading && orders.length === 0" class="loading-state">
         <view class="loading-spinner"></view>
         <text>加载中...</text>
       </view>
-      
+
       <view v-else-if="orders.length === 0" class="empty-state">
         <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
@@ -24,10 +24,10 @@
         <text class="empty-title">暂无订单</text>
         <text class="empty-desc">购买笔记或订阅创作者后会显示在这里</text>
       </view>
-      
+
       <view v-else class="orders-list">
-        <view 
-          v-for="order in orders" 
+        <view
+          v-for="order in orders"
           :key="order.id"
           class="order-card"
         >
@@ -37,7 +37,7 @@
               {{ getStatusText(order.status) }}
             </view>
           </view>
-          
+
           <view class="order-content">
             <view class="order-type">
               <text v-if="order.targetType === 1">笔记购买</text>
@@ -45,7 +45,7 @@
             </view>
             <text class="order-amount">¥{{ order.amount?.toFixed(2) }}</text>
           </view>
-          
+
           <view class="order-footer">
             <text class="order-time">{{ formatTime(order.createdAt) }}</text>
             <view v-if="order.status === 0" class="btn-pay" @click="payOrder(order)">
@@ -60,7 +60,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { paymentApi } from '../../api'
+import { paymentApi } from '@/api'
 
 const orders = ref<any[]>([])
 const loading = ref(false)

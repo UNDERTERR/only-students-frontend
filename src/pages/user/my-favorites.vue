@@ -9,13 +9,13 @@
       <text class="nav-title">我的收藏</text>
       <view class="nav-right"></view>
     </view>
-    
+
     <scroll-view scroll-y class="content-area">
       <view v-if="loading && favorites.length === 0" class="loading-state">
         <view class="loading-spinner"></view>
         <text>加载中...</text>
       </view>
-      
+
       <view v-else-if="favorites.length === 0" class="empty-state">
         <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -24,10 +24,10 @@
         <text class="empty-desc">收藏感兴趣的笔记，方便以后查看</text>
         <view class="empty-action" @click="goToHome">去浏览</view>
       </view>
-      
+
       <view v-else class="favorites-list">
-        <view 
-          v-for="item in favorites" 
+        <view
+          v-for="item in favorites"
           :key="item.id"
           class="favorite-item"
           @click="goToNote(item.noteId)"
@@ -53,7 +53,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { get } from '../../api'
+import { get } from '@/api'
 
 const favorites = ref<any[]>([])
 const loading = ref(false)

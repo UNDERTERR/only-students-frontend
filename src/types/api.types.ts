@@ -51,6 +51,18 @@ export interface RegisterRequest {
   schoolId?: number
 }
 
+// 更新用户信息请求
+export interface UpdateUserRequest {
+  nickname?: string
+  avatar?: string
+  bio?: string
+  email?: string
+  phone?: string
+  educationLevel?: number
+  schoolId?: number
+  schoolName?: string
+}
+
 // 笔记相关类型
 export interface Note {
   id: number
@@ -205,4 +217,20 @@ export interface Subscription {
   startTime: string
   endTime: string
   status: number
+}
+
+
+// 文件上传接口
+export interface FileUploadResult {
+  fileId: number;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  fileUrl: string;
+  isDuplicate: boolean;
+  md5Hash: string;
+  message: string;
+  mimeType: string;
+  originalName: string;
+  code?: number; // 后端返回的 code 字段（如果有）
 }

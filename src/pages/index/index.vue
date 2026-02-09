@@ -2,18 +2,18 @@
   <view class="home-page">
     <!-- 顶部导航栏 -->
     <NavBar />
-    
+
     <!-- 分类筛选 -->
     <view class="category-section">
       <scroll-view scroll-x class="category-filter" show-scrollbar="false">
-        <view 
+        <view
           :class="['filter-btn', { active: selectedCategory === null }]"
           @click="selectCategory(null)"
         >
           全部
         </view>
-        <view 
-          v-for="cat in categories" 
+        <view
+          v-for="cat in categories"
           :key="cat.id"
           :class="['filter-btn', { active: selectedCategory === cat.id }]"
           @click="selectCategory(cat.id)"
@@ -22,42 +22,42 @@
         </view>
       </scroll-view>
     </view>
-    
+
     <!-- 瀑布流笔记列表 -->
-    <scroll-view 
-      scroll-y 
+    <scroll-view
+      scroll-y
       class="content-area"
       @scrolltolower="loadMore"
       :refresher-enabled="true"
       :refresher-triggered="refreshing"
       @refresherrefresh="onRefresh"
     >
-      <Waterfall 
-        :notes="filteredNotes" 
+      <Waterfall
+        :notes="filteredNotes"
         @note-click="handleNoteClick"
       />
-      
+
       <!-- 加载更多 -->
       <view v-if="loading" class="loading-more">
         <view class="loading-spinner"></view>
         <text>加载中...</text>
       </view>
-      
+
       <!-- 没有更多了 -->
       <view v-if="!hasMore && notes.length > 0" class="no-more">
         <text>没有更多了</text>
       </view>
-      
+
       <!-- 空状态 -->
       <view v-if="notes.length === 0 && !loading" class="empty-state">
         <text class="empty-title">暂无笔记</text>
         <text class="empty-desc">去发布你的第一篇学习笔记吧</text>
       </view>
     </scroll-view>
-    
+
     <!-- 返回顶部按钮 -->
-    <view 
-      v-if="showBackToTop" 
+    <view
+      v-if="showBackToTop"
       class="back-to-top"
       @click="scrollToTop"
     >
@@ -65,7 +65,7 @@
         <path d="M18 15l-6-6-6 6"/>
       </svg>
     </view>
-    
+
     <!-- 底部导航 -->
     <TabBar :current="0" />
   </view>
@@ -73,11 +73,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useNoteStore } from '../../stores/note'
-import NavBar from '../../components/NavBar.vue'
-import TabBar from '../../components/TabBar.vue'
-import Waterfall from '../../components/Waterfall.vue'
-import type { Note } from '../../stores/note'
+import { useNoteStore } from '@/stores/note'
+import NavBar from '@/components/NavBar.vue'
+import TabBar from '@/components/TabBar.vue'
+import Waterfall from '@/components/Waterfall.vue'
+import type { Note } from '@/stores/note'
 
 const noteStore = useNoteStore()
 
@@ -134,7 +134,7 @@ onMounted(() => {
 </script>
 
 <style>
-@import '../../styles/theme.css';
+@import '@/styles/theme.css';
 
 .home-page {
   min-height: 100vh;

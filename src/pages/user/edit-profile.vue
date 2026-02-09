@@ -9,65 +9,65 @@
       <text class="nav-title">编辑资料</text>
       <view class="nav-right"></view>
     </view>
-    
+
     <scroll-view scroll-y class="content-area">
       <!-- 头像 -->
       <view class="avatar-section">
-        <image 
-          :src="form.avatar || '/static/default-avatar.png'" 
+        <image
+          :src="form.avatar || '/static/default-avatar.png'"
           class="avatar"
           mode="aspectFill"
           @click="changeAvatar"
         />
         <text class="change-text">点击更换头像</text>
       </view>
-      
+
       <!-- 表单 -->
       <view class="form-section">
         <view class="form-item">
           <text class="label">昵称</text>
-          <input 
-            type="text" 
+          <input
+            type="text"
             v-model="form.nickname"
             placeholder="请输入昵称"
             class="input"
           />
         </view>
-        
+
         <view class="form-item">
           <text class="label">用户名</text>
-          <input 
-            type="text" 
+          <input
+            type="text"
             v-model="form.username"
             placeholder="请输入用户名"
             class="input"
             disabled
           />
         </view>
-        
+
         <view class="form-item">
           <text class="label">邮箱</text>
-          <input 
-            type="text" 
+          <input
+            type="text"
             v-model="form.email"
             placeholder="请输入邮箱"
             class="input"
           />
         </view>
-        
+
         <view class="form-item">
           <text class="label">手机号</text>
-          <input 
-            type="number" 
+          <input
+            type="number"
             v-model="form.phone"
             placeholder="请输入手机号"
             class="input"
           />
         </view>
-        
+
         <view class="form-item">
           <text class="label">个人简介</text>
-          <textarea 
+          <textarea
             v-model="form.bio"
             placeholder="介绍一下自己吧..."
             class="textarea"
@@ -75,17 +75,17 @@
           />
           <text class="char-count">{{ form.bio?.length || 0 }}/200</text>
         </view>
-        
+
         <view class="form-item">
           <text class="label">学校</text>
-          <input 
-            type="text" 
+          <input
+            type="text"
             v-model="form.schoolName"
             placeholder="请输入学校名称"
             class="input"
           />
         </view>
-        
+
         <view class="form-item">
           <text class="label">学段</text>
           <picker mode="selector" :range="educationLevels" :value="educationIndex" @change="onEducationChange">
@@ -98,11 +98,11 @@
           </picker>
         </view>
       </view>
-      
+
       <!-- 保存按钮 -->
       <view class="action-section">
-        <button 
-          class="save-btn" 
+        <button
+          class="save-btn"
           :class="{ loading: loading }"
           :disabled="loading"
           @click="saveProfile"
@@ -117,7 +117,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useUserStore } from '../../stores/user'
+import { useUserStore } from '@/stores/user'
+import { uploadFile,userApi } from '@/api/index'
 
 const userStore = useUserStore()
 
@@ -164,44 +165,65 @@ const onEducationChange = (e: any) => {
   form.value.educationLevel = e.detail.value + 1
 }
 
-const changeAvatar = () => {
-  uni.chooseImage({
-    count: 1,
-    success: (res) => {
-      // 这里应该上传图片到服务器
-      form.value.avatar = res.tempFilePaths[0]
-    }
-  })
+const changeAvatar = async () => {
+
+  try {
+    // 1. 选择图片
+    const res = await uni.chooseImage({ count: 1 })
+
+
+    const tempFilePath = res.tempFilePaths[0]
+    // 显示加载中
+    uni.showLoading({ title: '上传中...' })
+
+    // 2. 上传文件到服务器，获取URL
+    const file = await uploadFile(tempFilePath)
+
+    form.value.avatar = file.fileUrl
+
+    uni.showToast({ title: '更换成功', icon: 'success' })
+
+  } catch (err) {
+    uni.showToast({ title: '上传失败了', icon: 'none' })
+    console.error(err)
+  } finally {
+    uni.hideLoading()
+  }
 }
 
 const saveProfile = async () => {
   loading.value = true
-  
+
   try {
-    // 注意：后端目前没有更新用户信息的接口
-    // 这里只是保存到本地，实际项目中需要后端提供PUT /user接口
-    uni.showToast({ 
-      title: '资料已更新（仅本地）', 
-      icon: 'success' 
+    // 调用后端API更新用户信息
+    console.log(form.value.avatar)
+    const updatedUserInfo = await userApi.updateUser({
+      nickname: form.value.nickname,
+      avatar: form.value.avatar,
+      email: form.value.email,
+      phone: form.value.phone,
+      bio: form.value.bio,
+      schoolName: form.value.schoolName,
+      educationLevel: form.value.educationLevel || undefined
     })
-    
+
     // 更新本地存储的用户信息
-    const userInfo = userStore.userInfo
-    if (userInfo) {
-      userInfo.nickname = form.value.nickname
-      userInfo.email = form.value.email
-      userInfo.phone = form.value.phone
-      userInfo.bio = form.value.bio
-      userInfo.schoolName = form.value.schoolName
-      userInfo.educationLevel = form.value.educationLevel
-      uni.setStorageSync('userInfo', userInfo)
-    }
-    
+    userStore.userInfo = updatedUserInfo
+    uni.setStorageSync('userInfo', updatedUserInfo)
+
+    uni.showToast({
+      title: '资料更新成功',
+      icon: 'success'
+    })
+
     setTimeout(() => {
       uni.navigateBack()
     }, 1500)
-  } catch (error) {
-    uni.showToast({ title: '保存失败', icon: 'none' })
+  } catch (error: any) {
+    uni.showToast({
+      title: error.message || '保存失败',
+      icon: 'none'
+    })
   } finally {
     loading.value = false
   }

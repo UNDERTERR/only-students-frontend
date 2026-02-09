@@ -15,13 +15,13 @@
         </view>
       </view>
     </view>
-    
+
     <scroll-view scroll-y class="content-area" @scrolltolower="loadMore">
       <view v-if="loading && notes.length === 0" class="loading-state">
         <view class="loading-spinner"></view>
         <text>加载中...</text>
       </view>
-      
+
       <view v-else-if="notes.length === 0" class="empty-state">
         <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -32,10 +32,10 @@
         <text class="empty-desc">快去发布你的第一篇笔记吧</text>
         <view class="empty-action" @click="goToPublish">发布笔记</view>
       </view>
-      
+
       <view v-else class="notes-list">
-        <view 
-          v-for="note in notes" 
+        <view
+          v-for="note in notes"
           :key="note.id"
           class="note-card"
           @click="goToNoteDetail(note.id)"
@@ -51,11 +51,11 @@
               </view>
             </view>
           </view>
-          
+
           <view class="note-content">
             <text class="note-title">{{ note.title }}</text>
             <text class="note-summary" v-if="note.summary">{{ note.summary }}</text>
-            
+
             <view class="note-stats">
               <view class="stat-item">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -78,7 +78,7 @@
               </view>
             </view>
           </view>
-          
+
           <view class="note-actions">
             <view class="action-btn" @click.stop="editNote(note)">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -96,7 +96,7 @@
             </view>
           </view>
         </view>
-        
+
         <view v-if="loading" class="loading-more">
           <view class="loading-spinner"></view>
           <text>加载中...</text>
@@ -108,8 +108,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { noteApi } from '../../api/note'
-import type { Note } from '../../types/api.types'
+import { noteApi } from '@/api/note'
+import type { Note } from '@/types/api.types'
 
 const notes = ref<Note[]>([])
 const loading = ref(false)
@@ -122,7 +122,7 @@ onMounted(() => {
 
 const loadNotes = async () => {
   if (loading.value || !hasMore.value) return
-  
+
   loading.value = true
   try {
     const res = await noteApi.getMyNotes()

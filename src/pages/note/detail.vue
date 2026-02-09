@@ -16,17 +16,17 @@
         </svg>
       </view>
     </view>
-    
+
     <!-- 内容区 -->
     <scroll-view scroll-y class="detail-content" @scrolltolower="loadMoreComments">
       <!-- 封面 -->
       <image v-if="note.coverImage" :src="note.coverImage" mode="widthFix" class="detail-cover"/>
-      
+
       <!-- 标题和分类 -->
       <view class="detail-header">
         <view class="category-badge">{{ note.categoryName }}</view>
         <text class="detail-title">{{ note.title }}</text>
-        
+
         <!-- 作者信息 -->
         <view class="author-section" @click="goToAuthor(note.userId)">
           <image v-if="note.authorAvatar" :src="note.authorAvatar" class="author-avatar-large"/>
@@ -39,11 +39,11 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 笔记内容 -->
       <view class="content-body">
         <text class="content-text">{{ note.content }}</text>
-        
+
         <!-- 如果是付费内容，显示遮罩 -->
         <view v-if="note.visibility === 2 && !hasPurchased && !isSelf" class="paywall">
           <view class="paywall-content">
@@ -60,14 +60,14 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 标签 -->
       <view v-if="note.tags && note.tags.length > 0" class="tags-section">
         <view v-for="(tag, index) in note.tags" :key="index" class="tag-item">
           #{{ tag }}
         </view>
       </view>
-      
+
       <!-- 互动数据 -->
       <view class="stats-bar">
         <view class="stat-item">
@@ -87,7 +87,7 @@
           <text class="stat-label">分享</text>
         </view>
       </view>
-      
+
       <!-- 评分 -->
       <view class="rating-section">
         <view class="rating-header">
@@ -98,16 +98,16 @@
           </view>
         </view>
         <view class="rating-stars">
-          <view 
-            v-for="star in 5" 
+          <view
+            v-for="star in 5"
             :key="star"
             class="star"
             @click="rateNote(star)"
           >
-            <svg 
-              width="28" 
-              height="28" 
-              viewBox="0 0 24 24" 
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
               :fill="star <= (myRating || 0) ? '#FFC107' : 'none'"
               :stroke="star <= (myRating || 0) ? '#FFC107' : '#DDD'"
               stroke-width="2"
@@ -118,26 +118,26 @@
         </view>
         <text v-if="myRating" class="my-rating">我的评分: {{ myRating }}星</text>
       </view>
-      
+
       <!-- 评论列表 -->
       <view class="comments-section">
         <view class="comments-header">
           <text class="section-title">评论</text>
           <text class="comments-count">{{ commentCount }}条</text>
         </view>
-        
+
         <view v-if="comments.length === 0 && !commentLoading" class="empty-comments">
           <text>暂无评论，快来抢沙发吧~</text>
         </view>
-        
+
         <view v-else class="comments-list">
-          <view 
-            v-for="comment in comments" 
+          <view
+            v-for="comment in comments"
             :key="comment.id"
             class="comment-item"
           >
-            <image 
-              :src="comment.userAvatar || '/static/default-avatar.png'" 
+            <image
+              :src="comment.userAvatar || '/static/default-avatar.png'"
               class="comment-avatar"
               mode="aspectFill"
             />
@@ -161,14 +161,14 @@
             </view>
           </view>
         </view>
-        
+
         <view v-if="commentLoading" class="loading-more">
           <view class="loading-spinner"></view>
           <text>加载中...</text>
         </view>
       </view>
     </scroll-view>
-    
+
     <!-- 底部操作栏 -->
     <view class="bottom-bar">
       <view class="action-input" @click="focusComment">
@@ -199,12 +199,12 @@
         </view>
       </view>
     </view>
-    
+
     <!-- 评论输入框 -->
     <view v-if="showCommentInput" class="comment-modal">
       <view class="modal-mask" @click="closeCommentInput"></view>
       <view class="comment-input-box">
-        <textarea 
+        <textarea
           v-model="commentContent"
           :placeholder="replyTo ? `回复 ${replyTo.username}:` : '写评论...'"
           class="comment-textarea"
@@ -213,7 +213,7 @@
         />
         <view class="input-actions">
           <text class="char-count">{{ commentContent.length }}/500</text>
-          <view 
+          <view
             :class="['send-btn', { active: commentContent.trim() }]"
             @click="submitComment"
           >
@@ -227,10 +227,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { noteApi, favoriteApi, ratingApi, shareApi, commentApi } from '../../api/note'
-import { subscriptionApi } from '../../api/message'
-import { useUserStore } from '../../stores/user'
-import type { Note } from '../../types/api.types'
+import { noteApi, favoriteApi, ratingApi, shareApi, commentApi } from '@/api/note'
+import { subscriptionApi } from '@/api/message'
+import { useUserStore } from '@/stores/user'
+import type { Note } from '@/types/api.types'
 
 const userStore = useUserStore()
 
@@ -260,7 +260,7 @@ onMounted(() => {
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1]
   const id = currentPage.options?.id
-  
+
   if (id) {
     noteId.value = parseInt(id)
     loadNoteDetail()
@@ -272,7 +272,7 @@ onMounted(() => {
 const loadNoteDetail = async () => {
   try {
     note.value = await noteApi.getById(noteId.value)
-    
+
     // 加载评分信息
     const [avg, count] = await Promise.all([
       ratingApi.getAverage(noteId.value).catch(() => 0),
@@ -287,14 +287,14 @@ const loadNoteDetail = async () => {
 
 const checkInteractions = async () => {
   if (!userStore.isLoggedIn) return
-  
+
   try {
     const [fav, rating, sub] = await Promise.all([
       favoriteApi.check(noteId.value).catch(() => false),
       ratingApi.getMyRating(noteId.value).catch(() => 0),
       note.value ? subscriptionApi.checkSubscription(note.value.userId).catch(() => false) : false
     ])
-    
+
     isFavorited.value = fav
     myRating.value = rating
     isSubscribed.value = sub
@@ -305,7 +305,7 @@ const checkInteractions = async () => {
 
 const loadComments = async () => {
   if (commentLoading.value) return
-  
+
   commentLoading.value = true
   try {
     const res = await commentApi.getByNoteId(noteId.value, commentPage.value)
@@ -332,7 +332,7 @@ const toggleLike = async () => {
     uni.navigateTo({ url: '/pages/auth/login' })
     return
   }
-  
+
   // 注意：后端没有单独的点赞接口，点赞通过评分实现（1星表示点赞）
   if (!isLiked.value) {
     await ratingApi.rate(noteId.value, 5)
@@ -347,7 +347,7 @@ const toggleFavorite = async () => {
     uni.navigateTo({ url: '/pages/auth/login' })
     return
   }
-  
+
   try {
     if (isFavorited.value) {
       await favoriteApi.remove(noteId.value)
@@ -370,12 +370,12 @@ const rateNote = async (score: number) => {
     uni.navigateTo({ url: '/pages/auth/login' })
     return
   }
-  
+
   try {
     await ratingApi.rate(noteId.value, score)
     myRating.value = score
     uni.showToast({ title: `已评分 ${score} 星`, icon: 'success' })
-    
+
     // 重新加载平均评分
     const avg = await ratingApi.getAverage(noteId.value)
     averageRating.value = avg
@@ -389,7 +389,7 @@ const shareNote = async () => {
     uni.navigateTo({ url: '/pages/auth/login' })
     return
   }
-  
+
   try {
     const res = await shareApi.create(noteId.value)
     uni.showModal({
@@ -420,17 +420,17 @@ const closeCommentInput = () => {
 
 const submitComment = async () => {
   if (!commentContent.value.trim()) return
-  
+
   try {
     await commentApi.create(
-      noteId.value, 
+      noteId.value,
       commentContent.value,
       replyTo.value?.id
     )
-    
+
     uni.showToast({ title: '评论成功', icon: 'success' })
     closeCommentInput()
-    
+
     // 重新加载评论
     commentPage.value = 1
     await loadComments()
@@ -450,7 +450,7 @@ const likeComment = async (comment: any) => {
     uni.navigateTo({ url: '/pages/auth/login' })
     return
   }
-  
+
   try {
     if (comment.isLiked) {
       await commentApi.unlikeComment(comment.id)
@@ -471,7 +471,7 @@ const toggleSubscribe = async () => {
     uni.navigateTo({ url: '/pages/auth/login' })
     return
   }
-  
+
   try {
     if (isSubscribed.value) {
       await subscriptionApi.unsubscribe(note.value!.userId)
@@ -505,8 +505,8 @@ const showMoreActions = () => {
     itemList: ['举报', '分享'],
     success: (res) => {
       if (res.tapIndex === 0) {
-        uni.navigateTo({ 
-          url: `/pages/report/submit?targetType=1&targetId=${noteId.value}` 
+        uni.navigateTo({
+          url: `/pages/report/submit?targetType=1&targetId=${noteId.value}`
         })
       } else if (res.tapIndex === 1) {
         shareNote()
@@ -523,12 +523,12 @@ const formatTime = (time: string) => {
   const date = new Date(time)
   const now = new Date()
   const diff = now.getTime() - date.getTime()
-  
+
   if (diff < 60000) return '刚刚'
   if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
   if (diff < 604800000) return `${Math.floor(diff / 86400000)}天前`
-  
+
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 </script>

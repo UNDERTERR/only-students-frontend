@@ -6,27 +6,27 @@
         <text class="logo-text">OnlyStudents</text>
         <text class="slogan">学习笔记分享平台</text>
       </view>
-      
+
       <!-- 登录表单 -->
       <view class="login-form">
         <view class="form-item">
-          <input 
-            type="text" 
+          <input
+            type="text"
             v-model="form.username"
             placeholder="用户名/邮箱/手机号"
             class="form-input"
           />
         </view>
-        
+
         <view class="form-item">
-          <input 
-            type="password" 
+          <input
+            type="password"
             v-model="form.password"
             placeholder="密码"
             class="form-input"
           />
         </view>
-        
+
         <view class="form-options">
           <view class="remember-me">
             <checkbox :checked="rememberMe" @click="rememberMe = !rememberMe" />
@@ -34,9 +34,9 @@
           </view>
           <text class="forgot-link" @click="forgotPassword">忘记密码?</text>
         </view>
-        
-        <button 
-          class="login-btn" 
+
+        <button
+          class="login-btn"
           :class="{ loading: loading }"
           :disabled="loading || !isFormValid"
           @click="handleLogin"
@@ -44,13 +44,13 @@
           <text v-if="!loading">登录</text>
           <view v-else class="btn-spinner"></view>
         </button>
-        
+
         <view class="register-link">
           <text>还没有账号? </text>
           <text class="link" @click="goToRegister">立即注册</text>
         </view>
       </view>
-      
+
       <!-- 其他登录方式 -->
       <view class="other-login">
         <view class="divider">
@@ -58,7 +58,7 @@
           <text>其他登录方式</text>
           <view class="line"></view>
         </view>
-        
+
         <view class="login-methods">
           <view class="method-item" @click="wechatLogin">
             <view class="method-icon wechat">
@@ -76,7 +76,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useUserStore } from '../../stores/user'
+import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
 
@@ -94,26 +94,26 @@ const isFormValid = computed(() => {
 
 const handleLogin = async () => {
   if (!isFormValid.value) return
-  
+
   loading.value = true
-  
+
   const result = await userStore.login({
     username: form.value.username,
     password: form.value.password
   })
-  
+
   loading.value = false
-  
+
   if (result.success) {
     uni.showToast({ title: '登录成功', icon: 'success' })
-    
+
     // 记住账号
     if (rememberMe.value) {
       uni.setStorageSync('rememberedUsername', form.value.username)
     } else {
       uni.removeStorageSync('rememberedUsername')
     }
-    
+
     // 跳转到首页
     setTimeout(() => {
       uni.switchTab({ url: '/pages/index/index' })

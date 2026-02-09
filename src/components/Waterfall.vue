@@ -2,19 +2,19 @@
   <view class="waterfall-wrapper">
     <!-- 左侧列 -->
     <view class="waterfall-column" id="left-column">
-      <view 
-        v-for="note in leftColumnNotes" 
+      <view
+        v-for="note in leftColumnNotes"
         :key="note.id"
         class="waterfall-item"
       >
         <NoteCard :note="note" @click="handleNoteClick(note)" />
       </view>
     </view>
-    
+
     <!-- 右侧列 -->
     <view class="waterfall-column" id="right-column">
-      <view 
-        v-for="note in rightColumnNotes" 
+      <view
+        v-for="note in rightColumnNotes"
         :key="note.id"
         class="waterfall-item"
       >
@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import NoteCard from './NoteCard.vue'
-import type { Note } from '../stores/note'
+import type { Note } from '@/stores/note'
 
 interface Props {
   notes: Note[]

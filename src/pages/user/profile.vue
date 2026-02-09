@@ -9,19 +9,19 @@
       <text class="nav-title">创作者主页</text>
       <view class="nav-right"></view>
     </view>
-    
+
     <scroll-view scroll-y class="content-area">
       <view v-if="loading" class="loading-state">
         <view class="loading-spinner"></view>
         <text>加载中...</text>
       </view>
-      
+
       <template v-else-if="creator">
         <!-- 创作者信息卡片 -->
         <view class="creator-card">
           <view class="creator-header">
-            <image 
-              :src="creator.avatar || '/static/default-avatar.png'" 
+            <image
+              :src="creator.avatar || '/static/default-avatar.png'"
               class="creator-avatar"
               mode="aspectFill"
             />
@@ -31,7 +31,7 @@
               <text class="creator-bio">{{ creator.bio || '这个人很懒，还没有简介' }}</text>
             </view>
           </view>
-          
+
           <!-- 统计数据 -->
           <view class="creator-stats">
             <view class="stat-item">
@@ -47,7 +47,7 @@
               <text class="stat-label">获赞</text>
             </view>
           </view>
-          
+
           <!-- 操作按钮 -->
           <view class="action-buttons">
             <view v-if="!isSelf" :class="['subscribe-btn', { subscribed: isSubscribed }]" @click="toggleSubscribe">
@@ -62,7 +62,7 @@
             </view>
           </view>
         </view>
-        
+
         <!-- 订阅配置 -->
         <view v-if="subscriptionConfig && !isSelf && !isSubscribed" class="subscription-card">
           <view class="subscription-header">
@@ -74,7 +74,7 @@
             立即订阅
           </view>
         </view>
-        
+
         <!-- 笔记列表 -->
         <view class="notes-section">
           <text class="section-title">发布的笔记</text>
@@ -82,8 +82,8 @@
             <text>暂无笔记</text>
           </view>
           <view v-else class="notes-grid">
-            <view 
-              v-for="note in notes" 
+            <view
+              v-for="note in notes"
               :key="note.id"
               class="note-item"
               @click="goToNote(note.id)"
@@ -114,7 +114,7 @@
           </view>
         </view>
       </template>
-      
+
       <view v-else class="error-state">
         <text>用户不存在</text>
       </view>
@@ -124,9 +124,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useUserStore } from '../../stores/user'
-import { get, post } from '../../api'
-import type { UserInfo } from '../../types/api.types'
+import { useUserStore } from '@/stores/user'
+import { get, post } from '@/api'
+import type { UserInfo } from '@/types/api.types'
 
 const userStore = useUserStore()
 
@@ -147,7 +147,7 @@ onMounted(() => {
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1]
   const id = currentPage.options?.id
-  
+
   if (id) {
     creatorId.value = parseInt(id)
     loadCreatorData()
@@ -160,7 +160,7 @@ const isSelf = computed(() => {
 
 const loadCreatorData = async () => {
   loading.value = true
-  
+
   try {
     // 并行获取数据
     const [userRes, notesRes, configRes, checkRes] = await Promise.all([
@@ -169,17 +169,17 @@ const loadCreatorData = async () => {
       get(`/subscription/config/${creatorId.value}`).catch(() => null),
       get(`/subscription/check/${creatorId.value}`).catch(() => false)
     ])
-    
+
     creator.value = userRes
     notes.value = notesRes
     subscriptionConfig.value = configRes
     isSubscribed.value = checkRes
-    
+
     // 计算统计数据
     stats.value.noteCount = notesRes.length
     const totalLikes = notesRes.reduce((sum: number, note: any) => sum + (note.likeCount || 0), 0)
     stats.value.likeCount = totalLikes
-    
+
   } catch (error) {
     console.error('加载创作者数据失败:', error)
     uni.showToast({ title: '加载失败', icon: 'none' })
@@ -202,7 +202,7 @@ const toggleSubscribe = async () => {
     uni.navigateTo({ url: '/pages/auth/login' })
     return
   }
-  
+
   if (isSubscribed.value) {
     // 取消订阅
     uni.showModal({
@@ -231,7 +231,7 @@ const subscribe = () => {
     uni.navigateTo({ url: '/pages/auth/login' })
     return
   }
-  
+
   uni.showModal({
     title: '订阅确认',
     content: `确定要订阅 ${creator.value?.nickname || creator.value?.username} 吗？`,
@@ -255,9 +255,9 @@ const sendMessage = () => {
     uni.navigateTo({ url: '/pages/auth/login' })
     return
   }
-  
-  uni.navigateTo({ 
-    url: `/pages/message/chat?id=${creatorId.value}&name=${creator.value?.nickname || creator.value?.username}` 
+
+  uni.navigateTo({
+    url: `/pages/message/chat?id=${creatorId.value}&name=${creator.value?.nickname || creator.value?.username}`
   })
 }
 

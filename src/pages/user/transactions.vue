@@ -9,13 +9,13 @@
       <text class="nav-title">提现记录</text>
       <view class="nav-right"></view>
     </view>
-    
+
     <scroll-view scroll-y class="content-area" @scrolltolower="loadMore">
       <view v-if="loading && withdrawals.length === 0" class="loading-state">
         <view class="loading-spinner"></view>
         <text>加载中...</text>
       </view>
-      
+
       <view v-else-if="withdrawals.length === 0" class="empty-state">
         <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
@@ -24,10 +24,10 @@
         <text class="empty-title">暂无提现记录</text>
         <text class="empty-desc">您还没有申请过提现</text>
       </view>
-      
+
       <view v-else class="withdrawals-list">
-        <view 
-          v-for="item in withdrawals" 
+        <view
+          v-for="item in withdrawals"
           :key="item.id"
           class="withdrawal-card"
         >
@@ -37,12 +37,12 @@
               {{ getStatusText(item.status) }}
             </view>
           </view>
-          
+
           <view class="withdrawal-amount">
             <text class="amount-label">提现金额</text>
             <text class="amount-value">¥{{ item.amount?.toFixed(2) }}</text>
           </view>
-          
+
           <view class="withdrawal-info">
             <view class="info-item">
               <text class="info-label">申请时间</text>
@@ -61,14 +61,14 @@
               <text class="info-value">{{ item.remark }}</text>
             </view>
           </view>
-          
+
           <view v-if="item.status === 0" class="withdrawal-actions">
             <view class="btn-cancel" @click="cancelWithdrawal(item.id)">
               取消申请
             </view>
           </view>
         </view>
-        
+
         <view v-if="loading" class="loading-more">
           <view class="loading-spinner"></view>
           <text>加载中...</text>
@@ -80,7 +80,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { withdrawalApi } from '../../api/message'
+import { withdrawalApi } from '@/api/message'
 
 const withdrawals = ref<any[]>([])
 const loading = ref(false)
@@ -93,7 +93,7 @@ onMounted(() => {
 
 const loadWithdrawals = async () => {
   if (loading.value || !hasMore.value) return
-  
+
   loading.value = true
   try {
     const res = await withdrawalApi.getList(page.value)

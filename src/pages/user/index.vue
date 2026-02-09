@@ -10,7 +10,7 @@
         </svg>
       </view>
     </view>
-    
+
     <!-- 未登录状态 -->
     <view v-if="!isLoggedIn" class="login-prompt">
       <view class="prompt-content">
@@ -22,7 +22,7 @@
         </view>
       </view>
     </view>
-    
+
     <!-- 已登录状态 -->
     <template v-else>
       <!-- 用户信息卡片 -->
@@ -38,7 +38,7 @@
             <text>编辑资料</text>
           </view>
         </view>
-        
+
         <!-- 数据统计 -->
         <view class="user-stats">
           <view class="stat-box" @click="goToMyNotes">
@@ -59,7 +59,7 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 钱包卡片 -->
       <view class="wallet-card" v-if="wallet">
         <view class="wallet-header">
@@ -78,7 +78,7 @@
           <view class="wallet-btn" @click="recharge">充值</view>
         </view>
       </view>
-      
+
       <!-- 功能菜单 -->
       <view class="menu-section">
         <view class="menu-title">我的内容</view>
@@ -136,7 +136,7 @@
           </view>
         </view>
       </view>
-      
+
       <view class="menu-section" v-if="userInfo?.isCreator">
         <view class="menu-title">创作者中心</view>
         <view class="menu-list">
@@ -165,7 +165,7 @@
           </view>
         </view>
       </view>
-      
+
       <view class="menu-section">
         <view class="menu-title">其他</view>
         <view class="menu-list">
@@ -209,18 +209,19 @@
         </view>
       </view>
     </template>
-    
+
     <!-- 底部导航 -->
+     <!--TODO 底部有显示问题 -->
     <TabBar :current="3" />
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useUserStore } from '../../stores/user'
-import { walletApi, subscriptionApi, noteApi } from '../../api'
-import type { WalletInfo } from '../../types/api.types'
-import TabBar from '../../components/TabBar.vue'
+import { useUserStore } from '@/stores/user'
+import { walletApi, subscriptionApi, noteApi } from '@/api/index'
+import type { WalletInfo } from '@/types/api.types'
+import TabBar from '@/components/TabBar.vue'
 
 const userStore = useUserStore()
 
@@ -250,16 +251,16 @@ const loadUserData = async () => {
       subscriptionApi.getMySubscribers().catch(() => []),
       subscriptionApi.getMySubscriptions().catch(() => [])
     ])
-    
+
     wallet.value = walletRes
     stats.value.noteCount = notesRes?.length || 0
     stats.value.subscriberCount = subscribersRes?.length || 0
     stats.value.subscriptionCount = subscriptionsRes?.length || 0
-    
+
     // 计算总点赞数
     const totalLikes = notesRes?.reduce((sum: number, note: any) => sum + (note.likeCount || 0), 0) || 0
     stats.value.likeCount = totalLikes
-    
+
   } catch (error) {
     console.error('加载用户数据失败:', error)
   }

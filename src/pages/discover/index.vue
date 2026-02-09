@@ -4,7 +4,7 @@
     <view class="page-nav">
       <text class="nav-title">发现</text>
     </view>
-    
+
     <!-- 搜索框 -->
     <view class="search-section">
       <view class="search-box">
@@ -12,8 +12,8 @@
           <circle cx="11" cy="11" r="8"/>
           <path d="M21 21l-4.35-4.35"/>
         </svg>
-        <input 
-          type="text" 
+        <input
+          type="text"
           class="search-input"
           placeholder="搜索笔记、创作者、学科..."
           v-model="searchKeyword"
@@ -21,13 +21,13 @@
         />
       </view>
     </view>
-    
+
     <!-- 热门搜索 -->
     <view class="section">
       <text class="section-title">热门搜索</text>
       <view class="hot-tags">
-        <view 
-          v-for="(tag, index) in hotTags" 
+        <view
+          v-for="(tag, index) in hotTags"
           :key="index"
           class="hot-tag"
           @click="searchTag(tag)"
@@ -36,13 +36,13 @@
         </view>
       </view>
     </view>
-    
+
     <!-- 推荐创作者 -->
     <view class="section">
       <text class="section-title">推荐创作者</text>
       <scroll-view scroll-x class="creators-scroll" show-scrollbar="false">
-        <view 
-          v-for="creator in creators" 
+        <view
+          v-for="creator in creators"
           :key="creator.id"
           class="creator-card"
           @click="goToCreator(creator.id)"
@@ -54,7 +54,7 @@
         </view>
       </scroll-view>
     </view>
-    
+
     <!-- 底部导航 -->
     <TabBar :current="1" />
   </view>
@@ -62,12 +62,12 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import TabBar from '../../components/TabBar.vue'
+import TabBar from '@/components/TabBar.vue'
 
 const searchKeyword = ref('')
 
 const hotTags = ref([
-  '高考数学', '雅思备考', 'Python入门', '考研政治', 
+  '高考数学', '雅思备考', 'Python入门', '考研政治',
   '物理力学', '化学实验', '英语四六级', '编程算法'
 ])
 

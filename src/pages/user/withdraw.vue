@@ -9,7 +9,7 @@
       <text class="nav-title">申请提现</text>
       <view class="nav-right"></view>
     </view>
-    
+
     <scroll-view scroll-y class="content-area">
       <!-- 余额显示 -->
       <view class="balance-card">
@@ -17,22 +17,22 @@
         <text class="balance-amount">¥{{ wallet?.balance?.toFixed(2) || '0.00' }}</text>
         <text class="balance-hint">可提现金额：¥{{ availableAmount.toFixed(2) }}</text>
       </view>
-      
+
       <!-- 提现金额 -->
       <view class="form-section">
         <text class="section-title">提现金额</text>
         <view class="amount-input-wrapper">
           <text class="currency">¥</text>
-          <input 
-            type="digit" 
+          <input
+            type="digit"
             v-model="amount"
             placeholder="请输入提现金额"
             class="amount-input"
           />
         </view>
         <view class="quick-amounts">
-          <view 
-            v-for="amt in quickAmounts" 
+          <view
+            v-for="amt in quickAmounts"
             :key="amt"
             :class="['quick-amount', { active: amount === amt.toString() }]"
             @click="amount = amt.toString()"
@@ -44,12 +44,12 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 到账方式 -->
       <view class="form-section">
         <text class="section-title">到账方式</text>
         <view class="payment-methods">
-          <view 
+          <view
             :class="['payment-method', { active: accountType === 1 }]"
             @click="accountType = 1"
           >
@@ -61,7 +61,7 @@
               </svg>
             </view>
           </view>
-          <view 
+          <view
             :class="['payment-method', { active: accountType === 2 }]"
             @click="accountType = 2"
           >
@@ -75,25 +75,25 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 账号信息 -->
       <view class="form-section">
         <text class="section-title">收款账号</text>
-        <input 
-          type="text" 
+        <input
+          type="text"
           v-model="accountInfo.account"
           placeholder="请输入支付宝账号/微信号"
           class="form-input"
         />
-        <input 
-          type="text" 
+        <input
+          type="text"
           v-model="accountInfo.name"
           placeholder="请输入真实姓名"
           class="form-input"
           style="margin-top: 12px;"
         />
       </view>
-      
+
       <!-- 提示信息 -->
       <view class="tips-section">
         <text class="tips-title">提现说明：</text>
@@ -102,11 +102,11 @@
         <text class="tips-item">3. 审核通过后款项将转入您的收款账号</text>
         <text class="tips-item">4. 如有问题请联系客服</text>
       </view>
-      
+
       <!-- 提交按钮 -->
       <view class="submit-section">
-        <button 
-          class="submit-btn" 
+        <button
+          class="submit-btn"
           :class="{ loading: loading }"
           :disabled="loading || !isValid"
           @click="submitWithdrawal"
@@ -121,8 +121,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { walletApi, withdrawalApi } from '../../api/message'
-import type { WalletInfo } from '../../types/api.types'
+import { walletApi, withdrawalApi } from '@/api/message'
+import type { WalletInfo } from '@/types/api.types'
 
 const wallet = ref<WalletInfo | null>(null)
 const amount = ref('')
@@ -141,9 +141,9 @@ const availableAmount = computed(() => {
 
 const isValid = computed(() => {
   const numAmount = parseFloat(amount.value)
-  return numAmount >= 10 && 
-         numAmount <= availableAmount.value && 
-         accountInfo.value.account && 
+  return numAmount >= 10 &&
+         numAmount <= availableAmount.value &&
+         accountInfo.value.account &&
          accountInfo.value.name
 })
 
@@ -161,33 +161,33 @@ const loadWallet = async () => {
 
 const submitWithdrawal = async () => {
   if (!isValid.value) return
-  
+
   const numAmount = parseFloat(amount.value)
   if (numAmount < 10) {
     uni.showToast({ title: '最低提现金额为10元', icon: 'none' })
     return
   }
-  
+
   if (numAmount > availableAmount.value) {
     uni.showToast({ title: '余额不足', icon: 'none' })
     return
   }
-  
+
   loading.value = true
-  
+
   try {
     await withdrawalApi.apply(numAmount, {
       accountType: accountType.value,
       account: accountInfo.value.account,
       name: accountInfo.value.name
     })
-    
-    uni.showToast({ 
-      title: '申请提交成功', 
+
+    uni.showToast({
+      title: '申请提交成功',
       icon: 'success',
       duration: 2000
     })
-    
+
     setTimeout(() => {
       uni.navigateBack()
     }, 1500)

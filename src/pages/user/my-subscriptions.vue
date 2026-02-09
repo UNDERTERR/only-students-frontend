@@ -10,14 +10,14 @@
       <text class="nav-title">我的订阅</text>
       <view class="nav-right"></view>
     </view>
-    
+
     <!-- 订阅列表 -->
     <scroll-view scroll-y class="content-area" @scrolltolower="loadMore">
       <view v-if="loading && subscriptions.length === 0" class="loading-state">
         <view class="loading-spinner"></view>
         <text>加载中...</text>
       </view>
-      
+
       <view v-else-if="subscriptions.length === 0" class="empty-state">
         <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -29,16 +29,16 @@
         <text class="empty-desc">去发现页看看感兴趣的创作者吧</text>
         <view class="empty-action" @click="goToDiscover">去发现</view>
       </view>
-      
+
       <view v-else class="subscription-list">
-        <view 
-          v-for="sub in subscriptions" 
+        <view
+          v-for="sub in subscriptions"
           :key="sub.id"
           class="subscription-card"
         >
           <view class="creator-info" @click="goToCreator(sub.creatorId)">
-            <image 
-              :src="sub.creatorAvatar || '/static/default-avatar.png'" 
+            <image
+              :src="sub.creatorAvatar || '/static/default-avatar.png'"
               class="creator-avatar"
               mode="aspectFill"
             />
@@ -47,14 +47,14 @@
               <text class="subscription-time">{{ formatTime(sub.startTime) }} 订阅</text>
             </view>
           </view>
-          
+
           <view class="subscription-status">
             <view :class="['status-badge', sub.status === 1 ? 'active' : 'expired']">
               {{ sub.status === 1 ? '订阅中' : '已过期' }}
             </view>
             <text v-if="sub.endTime" class="expire-time">{{ getExpireText(sub.endTime) }}</text>
           </view>
-          
+
           <view class="subscription-action">
             <view v-if="sub.status === 1" class="btn-renew" @click="renewSubscription(sub)">
               续费
@@ -64,7 +64,7 @@
             </view>
           </view>
         </view>
-        
+
         <!-- 加载更多 -->
         <view v-if="loading" class="loading-more">
           <view class="loading-spinner"></view>
@@ -77,8 +77,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { subscriptionApi } from '../../api'
-import type { Subscription } from '../../types/api.types'
+import { subscriptionApi } from '@/api'
+import type { Subscription } from '@/types/api.types'
 
 const subscriptions = ref<Subscription[]>([])
 const loading = ref(false)
@@ -91,9 +91,9 @@ onMounted(() => {
 
 const loadSubscriptions = async () => {
   if (loading.value || !hasMore.value) return
-  
+
   loading.value = true
-  
+
   try {
     const res = await subscriptionApi.getMySubscriptions()
     subscriptions.value = res
@@ -119,7 +119,7 @@ const getExpireText = (endTime: string): string => {
   const end = new Date(endTime)
   const now = new Date()
   const diffDays = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-  
+
   if (diffDays < 0) {
     return '已过期'
   } else if (diffDays === 0) {

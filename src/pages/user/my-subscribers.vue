@@ -9,13 +9,13 @@
       <text class="nav-title">我的粉丝</text>
       <view class="nav-right"></view>
     </view>
-    
+
     <scroll-view scroll-y class="content-area">
       <view v-if="loading && subscribers.length === 0" class="loading-state">
         <view class="loading-spinner"></view>
         <text>加载中...</text>
       </view>
-      
+
       <view v-else-if="subscribers.length === 0" class="empty-state">
         <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -26,16 +26,16 @@
         <text class="empty-title">暂无粉丝</text>
         <text class="empty-desc">发布优质内容吸引更多粉丝吧</text>
       </view>
-      
+
       <view v-else class="subscribers-list">
-        <view 
-          v-for="sub in subscribers" 
+        <view
+          v-for="sub in subscribers"
           :key="sub.id"
           class="subscriber-card"
           @click="goToUser(sub.subscriberId)"
         >
-          <image 
-            :src="sub.subscriberAvatar || '/static/default-avatar.png'" 
+          <image
+            :src="sub.subscriberAvatar || '/static/default-avatar.png'"
             class="subscriber-avatar"
             mode="aspectFill"
           />
@@ -54,7 +54,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { subscriptionApi } from '../../api/message'
+import { subscriptionApi } from '@/api/message'
 
 const subscribers = ref<any[]>([])
 const loading = ref(false)
@@ -86,8 +86,8 @@ const goToUser = (userId: number) => {
 }
 
 const sendMessage = (sub: any) => {
-  uni.navigateTo({ 
-    url: `/pages/message/chat?id=${sub.subscriberId}&name=${sub.subscriberName}` 
+  uni.navigateTo({
+    url: `/pages/message/chat?id=${sub.subscriberId}&name=${sub.subscriberName}`
   })
 }
 

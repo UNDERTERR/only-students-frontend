@@ -9,7 +9,7 @@
       <text class="nav-title">设置</text>
       <view class="nav-right"></view>
     </view>
-    
+
     <scroll-view scroll-y class="content-area">
       <!-- 账号安全 -->
       <view class="section">
@@ -41,7 +41,7 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 通知设置 -->
       <view class="section">
         <view class="section-title">通知设置</view>
@@ -60,7 +60,7 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 主题设置 -->
       <view class="section">
         <view class="section-title">主题设置</view>
@@ -76,7 +76,7 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 关于 -->
       <view class="section">
         <view class="section-title">关于</view>
@@ -105,7 +105,7 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 清除缓存 -->
       <view class="section">
         <view class="menu-list">
@@ -121,8 +121,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useUserStore } from '../../stores/user'
-import { useThemeStore } from '../../stores/theme'
+import { useUserStore } from '@/stores/user'
+import { useThemeStore } from '@/stores/theme'
 
 const userStore = useUserStore()
 const themeStore = useThemeStore()

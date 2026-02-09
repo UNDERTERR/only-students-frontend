@@ -3,13 +3,13 @@
     <view class="page-nav">
       <view class="back-btn" @click="goBack">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 12H5M12 19l-7-7 7-7"/>
+          <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
       </view>
       <text class="nav-title">创作者设置</text>
       <view class="nav-right"></view>
     </view>
-    
+
     <scroll-view scroll-y class="content-area">
       <!-- 订阅配置 -->
       <view class="section">
@@ -18,26 +18,16 @@
           <text class="label">订阅价格（元/月）</text>
           <view class="price-input-wrapper">
             <text class="currency">¥</text>
-            <input 
-              type="digit" 
-              v-model="config.price"
-              placeholder="设置每月订阅价格"
-              class="price-input"
-            />
+            <input type="digit" v-model="config.price" placeholder="设置每月订阅价格" class="price-input" />
           </view>
         </view>
-        
+
         <view class="form-item">
           <text class="label">服务说明</text>
-          <textarea 
-            v-model="config.description"
-            placeholder="描述您的订阅服务，吸引用户订阅..."
-            class="desc-input"
-            maxlength="200"
-          />
+          <textarea v-model="config.description" placeholder="描述您的订阅服务，吸引用户订阅..." class="desc-input" maxlength="200" />
           <text class="char-count">{{ config.description.length }}/200</text>
         </view>
-        
+
         <view class="preview-card">
           <text class="preview-title">预览效果</text>
           <view class="subscription-preview">
@@ -49,7 +39,7 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 数据统计 -->
       <view class="section">
         <text class="section-title">订阅数据</text>
@@ -64,15 +54,10 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 保存按钮 -->
       <view class="submit-section">
-        <button 
-          class="submit-btn" 
-          :class="{ loading: loading }"
-          :disabled="loading"
-          @click="saveConfig"
-        >
+        <button class="submit-btn" :class="{ loading: loading }" :disabled="loading" @click="saveConfig">
           <text v-if="!loading">保存设置</text>
           <view v-else class="btn-spinner"></view>
         </button>
@@ -83,13 +68,19 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { subscriptionApi } from '../../api/message'
-import type { SubscriptionConfig } from '../../types/api.types'
+import { subscriptionApi } from '@/api/message'
+import type { SubscriptionConfig } from '@/types/api.types'
 
-const config = ref<SubscriptionConfig>({
-  price: 0,
-  description: ''
-})
+const config = ref<SubscriptionConfig>(
+  {
+    id: 0,
+    creatorId: 0,
+    price: 0,
+    period: 30,
+    description: '',
+    status: 0
+  }
+)
 
 const subscriberCount = ref(0)
 const monthlyIncome = ref(0)
@@ -107,12 +98,12 @@ const loadConfig = async () => {
       subscriptionApi.getConfig(userId).catch(() => null),
       subscriptionApi.getSubscriberCount(userId).catch(() => 0)
     ])
-    
+
     if (configRes) {
       config.value = configRes
     }
     subscriberCount.value = countRes
-    
+
     // 模拟本月收入计算
     monthlyIncome.value = subscriberCount.value * (config.value.price || 0)
   } catch (error) {
@@ -125,15 +116,15 @@ const saveConfig = async () => {
     uni.showToast({ title: '请输入有效的订阅价格', icon: 'none' })
     return
   }
-  
+
   loading.value = true
-  
+
   try {
     await subscriptionApi.updateConfig({
       price: parseFloat(config.value.price.toString()),
       description: config.value.description
     })
-    
+
     uni.showToast({ title: '保存成功', icon: 'success' })
   } catch (error) {
     uni.showToast({ title: '保存失败', icon: 'none' })
@@ -364,6 +355,8 @@ const goBack = () => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

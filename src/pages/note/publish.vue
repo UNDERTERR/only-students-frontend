@@ -8,7 +8,7 @@
       </view>
       <text class="nav-title">发布笔记</text>
       <view class="nav-right">
-        <view 
+        <view
           :class="['publish-btn', { loading: loading }]"
           @click="handlePublish"
         >
@@ -17,7 +17,7 @@
         </view>
       </view>
     </view>
-    
+
     <scroll-view scroll-y class="content-area">
       <!-- 封面图 -->
       <view class="cover-section">
@@ -31,11 +31,11 @@
         </view>
         <image v-else :src="form.coverImage" class="cover-image" mode="aspectFill" @click="chooseCover"/>
       </view>
-      
+
       <!-- 标题 -->
       <view class="input-section">
-        <input 
-          type="text" 
+        <input
+          type="text"
           v-model="form.title"
           placeholder="填写标题会有更多赞哦~"
           class="title-input"
@@ -43,10 +43,10 @@
         />
         <text class="char-count">{{ form.title.length }}/50</text>
       </view>
-      
+
       <!-- 正文 -->
       <view class="input-section">
-        <textarea 
+        <textarea
           v-model="form.content"
           placeholder="添加正文..."
           class="content-input"
@@ -54,13 +54,13 @@
         />
         <text class="char-count">{{ form.content.length }}/5000</text>
       </view>
-      
+
       <!-- 分类 -->
       <view class="section">
         <text class="section-title">选择分类</text>
         <view class="category-list">
-          <view 
-            v-for="cat in categories" 
+          <view
+            v-for="cat in categories"
             :key="cat.id"
             :class="['category-item', { active: form.categoryId === cat.id }]"
             @click="selectCategory(cat.id)"
@@ -70,7 +70,7 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 标签 -->
       <view class="section">
         <text class="section-title">添加标签</text>
@@ -84,9 +84,9 @@
               </svg>
             </view>
           </view>
-          <input 
+          <input
             v-if="form.tags.length < 5"
-            type="text" 
+            type="text"
             v-model="tagInput"
             placeholder="输入标签"
             class="tag-input"
@@ -95,12 +95,12 @@
         </view>
         <text class="hint">最多添加5个标签，按回车确认</text>
       </view>
-      
+
       <!-- 可见性设置 -->
       <view class="section">
         <text class="section-title">可见性设置</text>
         <view class="visibility-list">
-          <view 
+          <view
             :class="['visibility-item', { active: form.visibility === 0 }]"
             @click="form.visibility = 0"
           >
@@ -114,8 +114,8 @@
               </svg>
             </view>
           </view>
-          
-          <view 
+
+          <view
             :class="['visibility-item', { active: form.visibility === 1 }]"
             @click="form.visibility = 1"
           >
@@ -129,8 +129,8 @@
               </svg>
             </view>
           </view>
-          
-          <view 
+
+          <view
             :class="['visibility-item', { active: form.visibility === 2 }]"
             @click="form.visibility = 2"
           >
@@ -145,14 +145,14 @@
             </view>
           </view>
         </view>
-        
+
         <!-- 价格设置（仅付费可见时显示） -->
         <view v-if="form.visibility === 2" class="price-setting">
           <text class="label">设置价格</text>
           <view class="price-input-wrapper">
             <text class="currency">¥</text>
-            <input 
-              type="digit" 
+            <input
+              type="digit"
               v-model="form.price"
               placeholder="0.00"
               class="price-input"
@@ -166,8 +166,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useNoteStore } from '../../stores/note'
-import { NOTE_CATEGORIES } from '../../config/api.config'
+import { useNoteStore } from '@/stores/note'
+import { NOTE_CATEGORIES } from '@/config/api.config'
 
 const noteStore = useNoteStore()
 
@@ -215,24 +215,24 @@ const handlePublish = async () => {
     uni.showToast({ title: '请输入标题', icon: 'none' })
     return
   }
-  
+
   if (!form.value.content.trim()) {
     uni.showToast({ title: '请输入正文内容', icon: 'none' })
     return
   }
-  
+
   if (!form.value.categoryId) {
     uni.showToast({ title: '请选择分类', icon: 'none' })
     return
   }
-  
+
   if (form.value.visibility === 2 && !form.value.price) {
     uni.showToast({ title: '请设置价格', icon: 'none' })
     return
   }
-  
+
   loading.value = true
-  
+
   try {
     const noteData = {
       title: form.value.title,
@@ -242,15 +242,15 @@ const handlePublish = async () => {
       price: form.value.visibility === 2 ? parseFloat(form.value.price) : 0,
       tags: form.value.tags
     }
-    
+
     await noteStore.publishNote(noteData)
-    
-    uni.showToast({ 
-      title: '发布成功', 
+
+    uni.showToast({
+      title: '发布成功',
       icon: 'success',
       duration: 2000
     })
-    
+
     setTimeout(() => {
       uni.switchTab({ url: '/pages/index/index' })
     }, 1500)

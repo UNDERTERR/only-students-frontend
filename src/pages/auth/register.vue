@@ -6,12 +6,12 @@
         <text class="logo-text">OnlyStudents</text>
         <text class="slogan">创建你的学习账号</text>
       </view>
-      
+
       <!-- 注册表单 -->
       <view class="register-form">
         <view class="form-item">
-          <input 
-            type="text" 
+          <input
+            type="text"
             v-model="form.username"
             placeholder="用户名 (3-50位)"
             class="form-input"
@@ -19,10 +19,10 @@
           />
           <text v-if="errors.username" class="error-text">{{ errors.username }}</text>
         </view>
-        
+
         <view class="form-item">
-          <input 
-            type="password" 
+          <input
+            type="password"
             v-model="form.password"
             placeholder="密码 (6-32位)"
             class="form-input"
@@ -30,10 +30,10 @@
           />
           <text v-if="errors.password" class="error-text">{{ errors.password }}</text>
         </view>
-        
+
         <view class="form-item">
-          <input 
-            type="password" 
+          <input
+            type="password"
             v-model="form.confirmPassword"
             placeholder="确认密码"
             class="form-input"
@@ -41,34 +41,34 @@
           />
           <text v-if="errors.confirmPassword" class="error-text">{{ errors.confirmPassword }}</text>
         </view>
-        
+
         <view class="form-item">
-          <input 
-            type="text" 
+          <input
+            type="text"
             v-model="form.nickname"
             placeholder="昵称"
             class="form-input"
           />
         </view>
-        
+
         <view class="form-item">
-          <input 
-            type="text" 
+          <input
+            type="text"
             v-model="form.email"
             placeholder="邮箱（选填）"
             class="form-input"
           />
         </view>
-        
+
         <view class="form-item">
-          <input 
-            type="number" 
+          <input
+            type="number"
             v-model="form.phone"
             placeholder="手机号（选填）"
             class="form-input"
           />
         </view>
-        
+
         <view class="form-item">
           <picker mode="selector" :range="educationLevels" :value="educationLevelIndex" @change="onEducationChange">
             <view class="picker-input">
@@ -79,7 +79,7 @@
             </view>
           </picker>
         </view>
-        
+
         <view class="agreement">
           <checkbox :checked="agreed" @click="agreed = !agreed" />
           <text>我已阅读并同意</text>
@@ -87,9 +87,9 @@
           <text>和</text>
           <text class="link" @click="showPrivacy">《隐私政策》</text>
         </view>
-        
-        <button 
-          class="register-btn" 
+
+        <button
+          class="register-btn"
           :class="{ loading: loading }"
           :disabled="loading || !isFormValid"
           @click="handleRegister"
@@ -97,7 +97,7 @@
           <text v-if="!loading">注册</text>
           <view v-else class="btn-spinner"></view>
         </button>
-        
+
         <view class="login-link">
           <text>已有账号? </text>
           <text class="link" @click="goToLogin">立即登录</text>
@@ -109,7 +109,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useUserStore } from '../../stores/user'
+import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
 
@@ -142,8 +142,8 @@ const educationLevelText = computed(() => {
 })
 
 const isFormValid = computed(() => {
-  return form.value.username && 
-         form.value.password && 
+  return form.value.username &&
+         form.value.password &&
          form.value.confirmPassword &&
          form.value.password === form.value.confirmPassword &&
          agreed.value &&
@@ -188,9 +188,9 @@ const onEducationChange = (e: any) => {
 
 const handleRegister = async () => {
   if (!isFormValid.value) return
-  
+
   loading.value = true
-  
+
   const result = await userStore.register({
     username: form.value.username,
     password: form.value.password,
@@ -199,23 +199,23 @@ const handleRegister = async () => {
     phone: form.value.phone || undefined,
     educationLevel: form.value.educationLevel || undefined
   })
-  
+
   loading.value = false
-  
+
   if (result.success) {
-    uni.showToast({ 
-      title: '注册成功', 
+    uni.showToast({
+      title: '注册成功',
       icon: 'success',
       duration: 2000
     })
-    
+
     // 自动登录
     setTimeout(async () => {
       const loginResult = await userStore.login({
         username: form.value.username,
         password: form.value.password
       })
-      
+
       if (loginResult.success) {
         uni.switchTab({ url: '/pages/index/index' })
       } else {
@@ -223,8 +223,8 @@ const handleRegister = async () => {
       }
     }, 1500)
   } else {
-    uni.showToast({ 
-      title: result.message || '注册失败', 
+    uni.showToast({
+      title: result.message || '注册失败',
       icon: 'none',
       duration: 3000
     })

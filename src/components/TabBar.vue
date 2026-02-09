@@ -1,34 +1,31 @@
 <template>
   <view class="tabbar">
-    <view 
-      v-for="(tab, index) in tabs" 
-      :key="index"
-      :class="['tab-item', { active: current === index }]"
-      @click="switchTab(index)"
-    >
+    <view v-for="(tab, index) in tabs" :key="index" :class="['tab-item', { active: current === index }]"
+      @click="switchTab(index)">
       <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <!-- 首页 -->
         <template v-if="index === 0">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-          <polyline points="9,22 9,12 15,12 15,22"/>
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9,22 9,12 15,12 15,22" />
         </template>
         <!-- 发现 -->
         <template v-else-if="index === 1">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="M21 21l-4.35-4.35"/>
+          <circle cx="11" cy="11" r="8" />
+          <path d="M21 21l-4.35-4.35" />
         </template>
         <!-- 消息 -->
         <template v-else-if="index === 2">
-          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          <path
+            d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
         </template>
         <!-- 我的 -->
         <template v-else-if="index === 3">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
         </template>
       </svg>
       <text class="tab-label">{{ tab.label }}</text>
-      
+
       <!-- 未读消息小红点 -->
       <view v-if="tab.hasBadge" class="tab-badge"></view>
     </view>
@@ -58,7 +55,7 @@ const switchTab = (index: number) => {
     // 已经在首页
     return
   }
-  
+
   const tab = tabs.value[index]
   uni.switchTab({
     url: tab.path

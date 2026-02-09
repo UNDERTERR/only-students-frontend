@@ -444,7 +444,6 @@ if (userStore.isLoggedIn) {
 
 ## ⚠️ 已知问题
 //TODO
-1. **编辑资料功能**：后端没有提供更新用户信息的PUT接口，目前仅保存到本地
 2. **交易明细**：后端没有提供钱包交易记录接口，提现页面只显示提现记录
 3. **后端API路径修复**：
    - 订阅：`/subscription` (POST), `/subscription/{id}` (DELETE)

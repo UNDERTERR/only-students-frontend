@@ -4,11 +4,11 @@
     <view class="page-nav">
       <text class="nav-title">消息</text>
     </view>
-    
+
     <!-- 消息列表 -->
     <scroll-view scroll-y class="message-list">
-      <view 
-        v-for="msg in messages" 
+      <view
+        v-for="msg in messages"
         :key="msg.id"
         class="message-item"
         @click="goToChat(msg)"
@@ -25,11 +25,11 @@
           <text class="msg-preview" :class="{ unread: msg.unread > 0 }">{{ msg.preview }}</text>
         </view>
       </view>
-      
+
       <!-- 系统通知 -->
       <view class="section-title">系统通知</view>
-      <view 
-        v-for="notice in notifications" 
+      <view
+        v-for="notice in notifications"
         :key="notice.id"
         class="notice-item"
       >
@@ -46,7 +46,7 @@
         </view>
       </view>
     </scroll-view>
-    
+
     <!-- 底部导航 -->
     <TabBar :current="2" />
   </view>
@@ -54,7 +54,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import TabBar from '../../components/TabBar.vue'
+import TabBar from '@/components/TabBar.vue'
 
 const messages = ref([
   { id: '1', name: '数学小王子', avatar: 'https://picsum.photos/100/100?random=1', preview: '你好，请问那份高考数学资料还有吗？', time: '10分钟前', unread: 2 },

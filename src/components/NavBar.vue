@@ -1,12 +1,12 @@
 <template>
   <view class="navbar">
-    <!-- Logo -->
+    <!-- #ifdef H5 -->
     <text class="nav-logo">OnlyStudents</text>
-    
+    <!-- #endif -->
     <!-- 搜索框 -->
     <view class="search-bar">
-      <input 
-        type="text" 
+      <input
+        type="text"
         class="search-input"
         placeholder="搜索笔记、创作者..."
         v-model="searchKeyword"
@@ -17,7 +17,7 @@
         <path d="M21 21l-4.35-4.35"/>
       </svg>
     </view>
-    
+
     <!-- 右侧操作 -->
     <view class="nav-actions">
       <!-- 主题切换 -->
@@ -30,7 +30,7 @@
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
       </view>
-      
+
       <!-- 消息 -->
       <view class="nav-icon" @click="goToMessages">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useThemeStore } from '../stores/theme'
+import { useThemeStore } from '@/stores/theme'
 
 const themeStore = useThemeStore()
 const searchKeyword = ref('')
