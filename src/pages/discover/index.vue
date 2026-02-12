@@ -150,7 +150,7 @@
                 mode="aspectFill"
               />
               <view class="note-content">
-                <text class="note-title">{{ note.title }}</text>
+                <rich-text class="note-title" :nodes="note.title ? note.title.replace(/<em>/g, '<span style=\'color: #FF6B6B; font-weight: 600;\'>').replace(/<\/em>/g, '</span>') : ''"></rich-text>
                 <view class="note-author">
                   <image 
                     :src="note.authorAvatar || '/static/default-avatar.svg'" 
@@ -190,7 +190,7 @@
               mode="aspectFill"
             />
             <view class="note-content">
-              <text class="note-title">{{ note.title }}</text>
+              <rich-text class="note-title" :nodes="note.title ? note.title.replace(/<em>/g, '<span style=\'color: #FF6B6B; font-weight: 600;\'>').replace(/<\/em>/g, '</span>') : ''"></rich-text>
               <view class="note-author">
                 <image 
                   :src="note.authorAvatar || '/static/default-avatar.svg'" 
@@ -480,7 +480,7 @@ onMounted(() => {
 .search-page {
   min-height: 100vh;
   background: var(--bg-primary);
-  padding-bottom: calc(52px + env(safe-area-inset-bottom));
+  padding-bottom: calc(48px + env(safe-area-inset-bottom));
 }
 
 /* 搜索头部 */

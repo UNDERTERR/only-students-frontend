@@ -162,7 +162,7 @@ const subscribeAgain = (creatorId: number) => {
 .subscriptions-page {
   min-height: 100vh;
   background: var(--bg-primary);
-  padding-bottom: calc(52px + env(safe-area-inset-bottom));
+  padding-bottom: calc(48px + env(safe-area-inset-bottom));
 }
 
 .page-nav {

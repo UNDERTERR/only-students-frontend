@@ -77,7 +77,7 @@ const switchTab = (index: number) => {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 52px;
+  height: 48px;
   background: var(--bg-card);
   border-top: 1px solid var(--border-light);
   display: flex;

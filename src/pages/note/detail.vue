@@ -3,13 +3,13 @@
     <!-- 导航栏 -->
     <view class="detail-nav">
       <view class="back-btn" @click="goBack">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
       </view>
       <text class="nav-title">笔记详情</text>
       <view class="more-btn" @click="showMoreActions">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="1"/>
           <circle cx="19" cy="12" r="1"/>
           <circle cx="5" cy="12" r="1"/>
@@ -19,72 +19,126 @@
 
     <!-- 内容区 -->
     <scroll-view scroll-y class="detail-content" @scrolltolower="loadMoreComments">
-      <!-- 封面 -->
-      <image v-if="note.coverImage" :src="note.coverImage" mode="widthFix" class="detail-cover"/>
+      <!-- 笔记主体轮播（有图片才显示） -->
+      <view v-if="noteImages.length > 0" class="media-carousel">
+        <swiper 
+          class="media-swiper" 
+          :indicator-dots="true" 
+          :autoplay="false" 
+          :circular="true"
+          indicator-color="rgba(255, 255, 255, 0.4)"
+          indicator-active-color="#fff"
+          @change="onSwiperChange"
+        >
+          <swiper-item 
+            v-for="(img, index) in noteImages" 
+            :key="index"
+            @click="openFullscreenPreview(index)"
+          >
+            <image :src="img" mode="aspectFill" class="media-image"/>
+          </swiper-item>
+        </swiper>
+      </view>
 
-      <!-- 标题和分类 -->
-      <view class="detail-header">
-        <view class="category-badge">{{ note.categoryName }}</view>
-        <text class="detail-title">{{ note.title }}</text>
-
-        <!-- 作者信息 -->
-        <view class="author-section" @click="goToAuthor(note.userId)">
-          <image v-if="note.authorAvatar" :src="note.authorAvatar" class="author-avatar-large"/>
-          <view class="author-info">
-            <text class="author-name-large">{{ note.authorName }}</text>
-            <text class="publish-time">{{ formatTime(note.createdAt) }}</text>
+      <!-- 全屏图片预览 -->
+      <view v-if="showFullscreenPreview" class="fullscreen-preview" @click="closeFullscreenPreview">
+        <view class="preview-header">
+          <view class="preview-close" @click.stop="closeFullscreenPreview">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
           </view>
-          <view v-if="!isSelf" class="subscribe-btn" @click.stop="toggleSubscribe">
-            <text>{{ isSubscribed ? '已订阅' : '订阅' }}</text>
-          </view>
+          <text class="preview-counter">{{ currentPreviewIndex + 1 }} / {{ noteImages.length }}</text>
+        </view>
+        
+        <swiper 
+          class="preview-swiper" 
+          :current="currentPreviewIndex"
+          :autoplay="false"
+          @change="onPreviewSwiperChange"
+        >
+          <swiper-item v-for="(img, index) in noteImages" :key="index">
+            <image :src="img" mode="aspectFit" class="preview-image"/>
+          </swiper-item>
+        </swiper>
+        
+        <view class="preview-indicator">
+          <view 
+            v-for="(img, index) in noteImages" 
+            :key="index"
+            :class="['preview-dot', { active: index === currentPreviewIndex }]"
+          />
         </view>
       </view>
 
-      <!-- 笔记内容 -->
-      <view class="content-body">
-        <text class="content-text">{{ note.content }}</text>
+      <!-- 用户信息区域（轮播图下方） -->
+      <view class="user-info-section" @click="goToAuthor(note.userId)">
+        <image 
+          v-if="note.authorAvatar" 
+          :src="note.authorAvatar" 
+          class="user-avatar"
+          mode="aspectFill"
+        />
+        <view class="user-info">
+          <text class="user-nickname">{{ note.authorNickname || note.authorName }}</text>
+          <text class="user-username">@{{ note.authorUsername || '用户' + note.userId }}</text>
+        </view>
+        <text class="publish-time">{{ formatTime(note.createdAt) }}</text>
+      </view>
 
-        <!-- 如果是付费内容，显示遮罩 -->
-        <view v-if="note.visibility === 2 && !hasPurchased && !isSelf" class="paywall">
-          <view class="paywall-content">
-            <text class="paywall-title">继续阅读</text>
-            <text class="paywall-desc">订阅创作者或购买此笔记解锁完整内容</text>
-            <view class="paywall-price">
-              <text class="price-label">价格</text>
-              <text class="price-value">¥{{ note.price }}</text>
+      <!-- 作者和内容区 -->
+      <view class="content-wrapper">
+        <!-- 标题 -->
+        <view class="title-section">
+          <text class="detail-title">{{ note.title }}</text>
+        </view>
+
+        <!-- 笔记内容 -->
+        <view class="content-body">
+          <text class="content-text">{{ note.content }}</text>
+
+          <!-- 如果是付费内容，显示遮罩 -->
+          <view v-if="note.visibility === 2 && !hasPurchased && !isSelf" class="paywall">
+            <view class="paywall-content">
+              <text class="paywall-title">继续阅读</text>
+              <text class="paywall-desc">订阅创作者或购买此笔记解锁完整内容</text>
+              <view class="paywall-price">
+                <text class="price-label">价格</text>
+                <text class="price-value">¥{{ note.price }}</text>
+              </view>
+              <view class="paywall-actions">
+                <view class="btn-secondary" @click="buyNote">购买笔记</view>
+                <view class="btn-primary" @click="subscribeCreator">订阅创作者</view>
+              </view>
             </view>
-            <view class="paywall-actions">
-              <view class="btn-secondary" @click="buyNote">购买笔记</view>
-              <view class="btn-primary" @click="subscribeCreator">订阅创作者</view>
-            </view>
           </view>
         </view>
-      </view>
 
-      <!-- 标签 -->
-      <view v-if="note.tags && note.tags.length > 0" class="tags-section">
-        <view v-for="(tag, index) in note.tags" :key="index" class="tag-item">
-          #{{ tag }}
+        <!-- 标签 -->
+        <view v-if="note.tags && note.tags.length > 0" class="tags-section">
+          <view v-for="(tag, index) in note.tags" :key="index" class="tag-item">
+            #{{ tag }}
+          </view>
         </view>
-      </view>
 
-      <!-- 互动数据 -->
-      <view class="stats-bar">
-        <view class="stat-item">
-          <text class="stat-num">{{ note.viewCount || 0 }}</text>
-          <text class="stat-label">浏览</text>
-        </view>
-        <view class="stat-item">
-          <text class="stat-num">{{ note.likeCount || 0 }}</text>
-          <text class="stat-label">点赞</text>
-        </view>
-        <view class="stat-item">
-          <text class="stat-num">{{ note.favoriteCount || 0 }}</text>
-          <text class="stat-label">收藏</text>
-        </view>
-        <view class="stat-item">
-          <text class="stat-num">{{ note.shareCount || 0 }}</text>
-          <text class="stat-label">分享</text>
+        <!-- 互动数据 -->
+        <view class="stats-bar">
+          <view class="stat-item">
+            <text class="stat-num">{{ note.viewCount || 0 }}</text>
+            <text class="stat-label">浏览</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-num">{{ note.likeCount || 0 }}</text>
+            <text class="stat-label">点赞</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-num">{{ note.favoriteCount || 0 }}</text>
+            <text class="stat-label">收藏</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-num">{{ note.shareCount || 0 }}</text>
+            <text class="stat-label">分享</text>
+          </view>
         </view>
       </view>
 
@@ -242,6 +296,22 @@ const isFavorited = ref(false)
 const isSubscribed = ref(false)
 const isSelf = computed(() => userStore.userInfo?.id === note.value?.userId)
 
+// 笔记图片列表
+const noteImages = computed(() => {
+  if (!note.value) return []
+  const images = []
+  // 如果有coverImage，作为第一张
+  if (note.value.coverImage) {
+    images.push(note.value.coverImage)
+  }
+  // 如果有图片列表，添加其余图片
+  if (note.value.images && note.value.images.length > 0) {
+    images.push(...note.value.images)
+  }
+  // 去重
+  return [...new Set(images)]
+})
+
 // 评分
 const averageRating = ref(0)
 const ratingCount = ref(0)
@@ -255,6 +325,32 @@ const commentPage = ref(1)
 const showCommentInput = ref(false)
 const commentContent = ref('')
 const replyTo = ref<any>(null)
+
+// 全屏图片预览
+const showFullscreenPreview = ref(false)
+const currentPreviewIndex = ref(0)
+const currentSwiperIndex = ref(0)
+
+// 打开全屏预览
+const openFullscreenPreview = (index: number) => {
+  currentPreviewIndex.value = index
+  showFullscreenPreview.value = true
+}
+
+// 关闭全屏预览
+const closeFullscreenPreview = () => {
+  showFullscreenPreview.value = false
+}
+
+// 轮播图切换
+const onSwiperChange = (e: any) => {
+  currentSwiperIndex.value = e.detail.current
+}
+
+// 预览轮播图切换
+const onPreviewSwiperChange = (e: any) => {
+  currentPreviewIndex.value = e.detail.current
+}
 
 onMounted(() => {
   const pages = getCurrentPages()
@@ -534,127 +630,205 @@ const formatTime = (time: string) => {
 </script>
 
 <style scoped>
-/* 样式与之前类似，添加新的评论和评分样式 */
+/* 页面基础 */
 .detail-page {
   min-height: 100vh;
   background: var(--bg-primary);
   padding-bottom: 60px;
 }
 
-/* 导航栏 */
+/* 导航栏 - 透明悬浮 */
 .detail-nav {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 60px;
-  background: var(--bg-primary);
+  height: 50px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.4), transparent);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--border-light);
+  padding: 0 12px;
   z-index: 100;
 }
 
 .back-btn, .more-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  backdrop-filter: blur(4px);
+}
+
+.nav-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* 内容区 */
+.detail-content {
+  padding-top: 0;
+}
+
+/* 媒体轮播 */
+.media-carousel {
+  width: 100%;
+  height: 420px;
+  background: var(--bg-secondary);
+}
+
+.media-swiper {
+  width: 100%;
+  height: 100%;
+}
+
+.media-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 全屏图片预览 */
+.fullscreen-preview {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  padding-top: 50px;
+  z-index: 10001;
+}
+
+.preview-close {
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
 }
 
-.nav-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-/* 内容区 */
-.detail-content {
-  padding-top: 60px;
-}
-
-.detail-cover {
-  width: 100%;
-  max-height: 400px;
-  object-fit: cover;
-}
-
-/* 头部信息 */
-.detail-header {
-  padding: 20px;
-  background: var(--bg-card);
-  margin-bottom: 12px;
-}
-
-.category-badge {
-  display: inline-block;
-  background: var(--accent-warm);
+.preview-counter {
+  font-size: 15px;
   color: white;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 4px;
-  margin-bottom: 12px;
+  font-weight: 500;
 }
 
-.detail-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.4;
-  margin-bottom: 16px;
-  display: block;
+.preview-swiper {
+  flex: 1;
+  width: 100%;
 }
 
-.author-section {
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.preview-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  padding-bottom: 40px;
+}
+
+.preview-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition: all 0.3s;
+}
+
+.preview-dot.active {
+  background: white;
+  transform: scale(1.2);
+}
+
+/* 用户信息区域（轮播图下方） */
+.user-info-section {
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
 }
 
-.author-avatar-large {
+.user-avatar {
   width: 44px;
   height: 44px;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid var(--border-light);
 }
 
-.author-info {
+.user-info {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
-.author-name-large {
+.user-nickname {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
-  display: block;
-  margin-bottom: 2px;
+}
+
+.user-username {
+  font-size: 12px;
+  color: var(--text-tertiary);
 }
 
 .publish-time {
   font-size: 12px;
   color: var(--text-tertiary);
+  white-space: nowrap;
 }
 
-.subscribe-btn {
-  background: var(--accent-warm);
-  color: white;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 8px 16px;
-  border-radius: 20px;
-}
-
-/* 内容 */
-.content-body {
-  padding: 20px;
+/* 内容包裹区 */
+.content-wrapper {
+  padding: 16px;
   background: var(--bg-card);
+}
+
+/* 标题区 - 紧凑 */
+.title-section {
   margin-bottom: 12px;
+}
+
+.detail-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
+  display: block;
+}
+
+/* 内容体 */
+.content-body {
   position: relative;
+  margin-bottom: 16px;
 }
 
 .content-text {
@@ -662,6 +836,7 @@ const formatTime = (time: string) => {
   color: var(--text-primary);
   line-height: 1.8;
   display: block;
+  white-space: pre-wrap;
 }
 
 .paywall {
@@ -670,61 +845,61 @@ const formatTime = (time: string) => {
   left: 0;
   right: 0;
   background: linear-gradient(to bottom, transparent, var(--bg-card) 30%);
-  padding: 60px 20px 20px;
+  padding: 60px 0 0;
 }
 
 .paywall-content {
   background: var(--bg-secondary);
-  border-radius: 16px;
-  padding: 24px;
+  border-radius: 12px;
+  padding: 20px;
   text-align: center;
   border: 1px solid var(--border-light);
 }
 
 .paywall-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .paywall-desc {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
   display: block;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .paywall-price {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 6px;
+  margin-bottom: 16px;
 }
 
 .price-label {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-tertiary);
 }
 
 .price-value {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--accent-warm);
 }
 
 .paywall-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .btn-primary, .btn-secondary {
   flex: 1;
-  padding: 12px 20px;
-  border-radius: 24px;
-  font-size: 14px;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-size: 13px;
   font-weight: 600;
   text-align: center;
 }
@@ -745,26 +920,24 @@ const formatTime = (time: string) => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 16px;
-  background: var(--bg-card);
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .tag-item {
-  padding: 6px 12px;
+  padding: 4px 10px;
   background: var(--bg-secondary);
   color: var(--accent-warm);
-  font-size: 13px;
-  border-radius: 16px;
+  font-size: 12px;
+  border-radius: 12px;
 }
 
-/* 统计 */
+/* 统计数据 */
 .stats-bar {
   display: flex;
   justify-content: space-around;
-  padding: 16px;
-  background: var(--bg-card);
-  margin-bottom: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .stat-item {
@@ -772,7 +945,7 @@ const formatTime = (time: string) => {
 }
 
 .stat-num {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
   display: block;
@@ -780,7 +953,7 @@ const formatTime = (time: string) => {
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-tertiary);
 }
 
@@ -788,7 +961,7 @@ const formatTime = (time: string) => {
 .rating-section {
   padding: 16px;
   background: var(--bg-card);
-  margin-bottom: 12px;
+  margin-top: 12px;
 }
 
 .rating-header {
@@ -799,7 +972,7 @@ const formatTime = (time: string) => {
 }
 
 .section-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -807,25 +980,25 @@ const formatTime = (time: string) => {
 .rating-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .rating-score {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--accent-warm);
 }
 
 .rating-count {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-tertiary);
 }
 
 .rating-stars {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   justify-content: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .star {
@@ -839,7 +1012,7 @@ const formatTime = (time: string) => {
 
 .my-rating {
   text-align: center;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
@@ -847,7 +1020,7 @@ const formatTime = (time: string) => {
 .comments-section {
   background: var(--bg-card);
   padding: 16px;
-  margin-bottom: 12px;
+  margin-top: 12px;
 }
 
 .comments-header {
@@ -858,7 +1031,7 @@ const formatTime = (time: string) => {
 }
 
 .comments-count {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-tertiary);
 }
 
@@ -881,8 +1054,8 @@ const formatTime = (time: string) => {
 }
 
 .comment-avatar {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -894,17 +1067,17 @@ const formatTime = (time: string) => {
 .comment-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .comment-username {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .comment-time {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-tertiary);
 }
 
@@ -912,7 +1085,7 @@ const formatTime = (time: string) => {
   font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.6;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   display: block;
 }
 
@@ -958,7 +1131,7 @@ const formatTime = (time: string) => {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  height: 55px;
   background: var(--bg-card);
   border-top: 1px solid var(--border-light);
   display: flex;
@@ -970,16 +1143,16 @@ const formatTime = (time: string) => {
 
 .action-input {
   flex: 1;
-  height: 40px;
+  height: 38px;
   background: var(--bg-secondary);
-  border-radius: 20px;
+  border-radius: 19px;
   display: flex;
   align-items: center;
   padding: 0 16px;
 }
 
 .action-input .placeholder {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-tertiary);
 }
 
@@ -994,7 +1167,7 @@ const formatTime = (time: string) => {
   align-items: center;
   gap: 2px;
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .action-btn svg {

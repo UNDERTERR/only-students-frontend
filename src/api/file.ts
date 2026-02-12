@@ -10,11 +10,13 @@ export const uploadFile = (filePath: string, url: string = '/file/upload', categ
     const header: Record<string, string> = {}
 
     if (token) header['Authorization'] = `Bearer ${token}`
+    // 将 userId 放入 header，后端从 header 读取
+    if (userId) header['X-User-Id'] = String(userId)
     
-    // 构建URL，添加用户ID和分类参数
-    let urlWithParams = `${API_BASE_URL}${url}?X-User-Id=${userId}`;
+    // 构建URL，只添加分类参数
+    let urlWithParams = `${API_BASE_URL}${url}`;
     if (category) {
-      urlWithParams += `&category=${category}`;
+      urlWithParams += `?category=${category}`;
     }
 
     uni.uploadFile({

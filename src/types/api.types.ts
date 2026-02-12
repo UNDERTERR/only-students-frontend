@@ -90,6 +90,8 @@ export interface Note {
   subject?: string
   tags?: string[]
   authorName?: string
+  authorUsername?: string
+  authorNickname?: string
   authorAvatar?: string
   publishTime?: string
   createdAt: string

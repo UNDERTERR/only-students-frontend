@@ -6,36 +6,20 @@
     <!-- 分类筛选 -->
     <view class="category-section">
       <scroll-view scroll-x class="category-filter" show-scrollbar="false">
-        <view
-          :class="['filter-btn', { active: selectedCategory === null }]"
-          @click="selectCategory(null)"
-        >
+        <view :class="['filter-btn', { active: selectedCategory === null }]" @click="selectCategory(null)">
           全部
         </view>
-        <view
-          v-for="cat in categories"
-          :key="cat.id"
-          :class="['filter-btn', { active: selectedCategory === cat.id }]"
-          @click="selectCategory(cat.id)"
-        >
+        <view v-for="cat in categories" :key="cat.id" :class="['filter-btn', { active: selectedCategory === cat.id }]"
+          @click="selectCategory(cat.id)">
           {{ cat.icon }} {{ cat.name }}
         </view>
       </scroll-view>
     </view>
 
     <!-- 瀑布流笔记列表 -->
-    <scroll-view
-      scroll-y
-      class="content-area"
-      @scrolltolower="loadMore"
-      :refresher-enabled="true"
-      :refresher-triggered="refreshing"
-      @refresherrefresh="onRefresh"
-    >
-      <Waterfall
-        :notes="filteredNotes"
-        @note-click="handleNoteClick"
-      />
+    <scroll-view scroll-y class="content-area" @scrolltolower="loadMore" :refresher-enabled="true"
+      :refresher-triggered="refreshing" @refresherrefresh="onRefresh">
+      <Waterfall :notes="filteredNotes" @note-click="handleNoteClick" />
 
       <!-- 加载更多 -->
       <view v-if="loading" class="loading-more">
@@ -56,13 +40,9 @@
     </scroll-view>
 
     <!-- 返回顶部按钮 -->
-    <view
-      v-if="showBackToTop"
-      class="back-to-top"
-      @click="scrollToTop"
-    >
+    <view v-if="showBackToTop" class="back-to-top" @click="scrollToTop">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M18 15l-6-6-6 6"/>
+        <path d="M18 15l-6-6-6 6" />
       </svg>
     </view>
 
@@ -139,8 +119,8 @@ onMounted(() => {
 .home-page {
   min-height: 100vh;
   background: var(--bg-primary);
-  padding-top: 60px;
-  padding-bottom: calc(52px + env(safe-area-inset-bottom));
+  padding-top: 112px;
+  padding-bottom: calc(48px + env(safe-area-inset-bottom));
 }
 
 .category-section {
@@ -177,8 +157,8 @@ onMounted(() => {
 }
 
 .content-area {
-  margin-top: 60px;
-  height: calc(100vh - 108px - env(safe-area-inset-bottom));
+  height: calc(100vh - 160px - env(safe-area-inset-bottom));
+  padding-top: 10px;
   padding-bottom: 20px;
 }
 
@@ -202,7 +182,9 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .no-more {

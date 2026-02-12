@@ -49,10 +49,45 @@
         <textarea
           v-model="form.content"
           placeholder="添加正文..."
-          class="content-input"
-          maxlength="5000"
+          class="content-input compact"
+          maxlength="500"
         />
-        <text class="char-count">{{ form.content.length }}/5000</text>
+        <text class="char-count">{{ form.content.length }}/500</text>
+      </view>
+
+      <!-- 文件上传 -->
+      <view class="input-section file-section">
+        <text class="section-label">上传文件</text>
+        <view v-if="!form.originalFileId" class="upload-file-btn" @click="chooseFile">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <text>点击上传文件</text>
+          <text class="file-hint">支持 PDF、Word、PPT 等格式</text>
+        </view>
+        <view v-else class="file-info">
+          <view class="file-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </view>
+          <view class="file-details">
+            <text class="file-name">{{ uploadedFileName }}</text>
+            <text class="file-size">{{ uploadedFileSize }}</text>
+          </view>
+          <view class="remove-file" @click="removeFile">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </view>
+        </view>
       </view>
 
       <!-- 分类 -->
@@ -100,9 +135,9 @@
       <view class="section">
         <text class="section-title">可见性设置</text>
         <view class="visibility-select-wrapper">
-          <picker 
-            mode="selector" 
-            :range="visibilityOptions" 
+          <picker
+            mode="selector"
+            :range="visibilityOptions"
             :value="form.visibility"
             @change="onVisibilityChange"
           >
@@ -149,9 +184,11 @@ import { ref, onMounted } from 'vue'
 import { useNoteStore } from '@/stores/note'
 import { NOTE_CATEGORIES } from '@/config/api.config'
 import { noteApi } from '@/api/note'
+import { useUserStore } from '@/stores/user'
+import { uploadPrivateFile, uploadPublicFile } from '@/api/file'
 
 const noteStore = useNoteStore()
-
+const userStore = useUserStore()
 // 获取页面参数（编辑模式）
 const page = getCurrentPages()[getCurrentPages().length - 1] as any
 const noteId = ref<number | null>(page.options?.id ? parseInt(page.options.id) : null)
@@ -164,8 +201,13 @@ const form = ref({
   categoryId: null as number | null,
   tags: [] as string[],
   visibility: 0,
-  price: ''
+  price: '',
+  originalFileId: null as number | null
 })
+
+// 已上传文件信息
+const uploadedFileName = ref('')
+const uploadedFileSize = ref('')
 
 const tagInput = ref('')
 const loading = ref(false)
@@ -184,6 +226,16 @@ onMounted(async () => {
       form.value.tags = note.tags || []
       form.value.visibility = note.visibility
       form.value.price = note.price ? String(note.price) : ''
+      
+      // 加载文件信息
+      if (note.originalFileId) {
+        form.value.originalFileId = note.originalFileId
+        // 如果有文件信息，从note中获取文件名
+        if (note.fileName) {
+          uploadedFileName.value = note.fileName
+          uploadedFileSize.value = note.fileSize ? formatFileSize(note.fileSize) : ''
+        }
+      }
     } catch (error) {
       console.error('加载笔记失败:', error)
       uni.showToast({ title: '加载失败', icon: 'none' })
@@ -193,13 +245,87 @@ onMounted(async () => {
   }
 })
 
-const chooseCover = () => {
-  uni.chooseImage({
+const chooseCover = async () => {
+  try {
+    // 选择图片
+    const res = await uni.chooseImage({ count: 1 });
+    const tempFilePath = res.tempFilePaths[0];
+    
+    // 显示上传中
+    uni.showLoading({ title: '上传中...', mask: true });
+    
+    // 上传图片到服务器
+    const result = await uploadPublicFile(tempFilePath);
+    
+    // 保存返回的URL
+    form.value.coverImage = result.fileUrl;
+    
+    uni.showToast({ title: '上传成功', icon: 'success' });
+  } catch (error) {
+    console.error('封面上传失败:', error);
+    uni.showToast({ title: '上传失败', icon: 'none' });
+  } finally {
+    uni.hideLoading();
+  }
+}
+
+// 选择并上传文件
+const chooseFile = () => {
+  uni.chooseMessageFile({
     count: 1,
-    success: (res) => {
-      form.value.coverImage = res.tempFilePaths[0]
+    type: 'file',
+    extension: ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.txt', '.md'],
+    success: async (res) => {
+      const file = res.tempFiles[0]
+      
+      // 显示上传中
+      uni.showLoading({ title: '上传中...', mask: true })
+      
+      try {
+        // 上传文件到服务器
+        const result = await uploadPrivateFile(file.path)
+        
+        // 保存文件信息
+        form.value.originalFileId = result.fileId
+        uploadedFileName.value = result.originalName || result.fileName
+        uploadedFileSize.value = formatFileSize(result.fileSize)
+        
+        uni.showToast({ title: '上传成功', icon: 'success' })
+      } catch (error) {
+        console.error('文件上传失败:', error)
+        uni.showToast({ title: '上传失败', icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
+    },
+    fail: (err) => {
+      console.error('选择文件失败:', err)
     }
   })
+}
+
+// 移除已上传的文件
+const removeFile = () => {
+  uni.showModal({
+    title: '确认移除',
+    content: '确定要移除已上传的文件吗？',
+    success: (res) => {
+      if (res.confirm) {
+        form.value.originalFileId = null
+        uploadedFileName.value = ''
+        uploadedFileSize.value = ''
+        uni.showToast({ title: '已移除', icon: 'success' })
+      }
+    }
+  })
+}
+
+// 格式化文件大小
+const formatFileSize = (size: number): string => {
+  if (size < 1024) return size + ' B'
+  if (size < 1024 * 1024) return (size / 1024).toFixed(1) + ' KB'
+  if (size < 1024 * 1024 * 1024) return (size / (1024 * 1024)).toFixed(1) + ' MB'
+  return (size / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
 }
 
 const selectCategory = (id: number) => {
@@ -262,7 +388,11 @@ const handleSave = async () => {
       visibility: form.value.visibility,
       price: form.value.visibility === 2 ? parseFloat(form.value.price) : 0,
       tags: form.value.tags,
-      coverImage: form.value.coverImage
+      coverImage: form.value.coverImage,
+      originalFileId: form.value.originalFileId,
+      authorNickname: userStore.userInfo?.nickname,
+      authorUsername: userStore.userInfo?.username,
+      authorAvatar: userStore.userInfo?.avatar,
     }
 
     if (isEdit.value && noteId.value) {
@@ -280,8 +410,18 @@ const handleSave = async () => {
     })
 
     setTimeout(() => {
-      // 保存后跳转到"我的笔记"页面
-      uni.navigateTo({ url: '/pages/user/my-notes' })
+      // 保存后返回上一页，并通知刷新
+      const pages = getCurrentPages()
+      const prevPage = pages[pages.length - 2]
+      if (prevPage) {
+        // 设置刷新标志
+        prevPage.$vm.needRefresh = true
+      }
+      uni.navigateBack({
+        success: () => {
+          uni.showToast({ title: '保存成功', icon: 'success', duration: 1500 })
+        }
+      })
     }, 1500)
   } catch (error) {
     console.error('保存失败:', error)
@@ -307,7 +447,7 @@ const handleDelete = () => {
           await noteApi.delete(noteId.value!)
           uni.showToast({ title: '删除成功', icon: 'success' })
           setTimeout(() => {
-            uni.navigateTo({ url: '/pages/user/my-notes' })
+            uni.redirectTo({ url: '/pages/user/my-notes' })
           }, 1500)
         } catch (error) {
           console.error('删除失败:', error)
@@ -446,12 +586,101 @@ const goBack = () => {
   line-height: 1.8;
 }
 
+.content-input.compact {
+  min-height: 100px;
+  max-height: 150px;
+}
+
 .char-count {
   position: absolute;
   bottom: 8px;
   right: 16px;
   font-size: 12px;
   color: var(--text-tertiary);
+}
+
+/* 文件上传区域 */
+.file-section {
+  margin-top: 12px;
+}
+
+.section-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+  display: block;
+}
+
+.upload-file-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg-secondary);
+  border: 2px dashed var(--border-medium);
+  border-radius: 10px;
+  color: var(--text-tertiary);
+  gap: 6px;
+}
+
+.upload-file-btn:active {
+  background: var(--border-light);
+}
+
+.file-hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+}
+
+.file-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-warm);
+  color: white;
+  border-radius: 8px;
+}
+
+.file-details {
+  flex: 1;
+}
+
+.file-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 2px;
+  word-break: break-all;
+}
+
+.file-size {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.remove-file {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  background: var(--bg-card);
+  border-radius: 50%;
 }
 
 .section {

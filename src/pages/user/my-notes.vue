@@ -49,7 +49,7 @@
 
           <view class="note-content">
             <text class="note-title">{{ note.title }}</text>
-            <text class="note-summary" v-if="note.summary">{{ note.summary }}</text>
+            <!-- <text class="note-summary" v-if="note.summary">{{ note.summary }}</text> -->
 
             <view class="note-stats">
               <view class="stat-item">
@@ -114,6 +114,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { noteApi } from '@/api/note'
 import type { Note } from '@/types/api.types'
 
@@ -121,9 +122,21 @@ const notes = ref<Note[]>([])
 const loading = ref(false)
 const page = ref(1)
 const hasMore = ref(true)
+const needRefresh = ref(false)
 
 onMounted(() => {
   loadNotes()
+})
+
+onShow(() => {
+  // 如果需要刷新，则重新加载数据
+  if (needRefresh.value) {
+    page.value = 1
+    hasMore.value = true
+    notes.value = []
+    loadNotes()
+    needRefresh.value = false
+  }
 })
 
 const loadNotes = async () => {
@@ -163,37 +176,10 @@ const editNote = (note: Note) => {
   uni.navigateTo({ url: `/pages/note/publish?id=${note.id}&edit=true` })
 }
 
-const deleteNote = (note: Note) => {
-  uni.showModal({
-    title: '确认删除',
-    content: `确定要删除笔记"${note.title}"吗？此操作不可恢复。`,
-    confirmColor: '#F44336',
-    success: async (res) => {
-      if (res.confirm) {
-        try {
-          await noteApi.delete(note.id)
-          notes.value = notes.value.filter(n => n.id !== note.id)
-          uni.showToast({ title: '删除成功', icon: 'success' })
-        } catch (error) {
-          uni.showToast({ title: '删除失败', icon: 'none' })
-        }
-      }
-    }
-  })
-}
-
 const publishNote = (note: Note) => {
-  // 详细调试日志
-  console.log('=== 发布笔记调试 ===')
-  console.log('笔记对象:', JSON.stringify(note))
-  console.log('笔记ID类型:', typeof note.id)
-  console.log('笔记ID值:', note.id)
-  console.log('笔记ID是否为null:', note.id === null)
-  console.log('笔记ID是否为undefined:', note.id === undefined)
 
   if (!note.id) {
     uni.showToast({ title: '笔记ID无效', icon: 'none' })
-    console.error('错误: 笔记ID无效')
     return
   }
 
@@ -209,9 +195,6 @@ const publishNote = (note: Note) => {
           note.status = 2 // 更新状态为已发布
           uni.showToast({ title: '发布成功', icon: 'success' })
         } catch (error: any) {
-          console.error('发布失败详细错误:', error)
-          console.error('错误响应:', error.response)
-          console.error('错误请求:', error.request)
           uni.showToast({ title: `发布失败: ${error.message || '未知错误'}`, icon: 'none' })
         }
       }
