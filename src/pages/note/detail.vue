@@ -71,8 +71,8 @@
         </view>
       </view>
 
-      <!-- 用户信息区域（轮播图下方） -->
-      <view class="user-info-section" @click="goToAuthor(note.userId)">
+      <!-- 用户信息区域（轮播图下方）- 点击进入创作者主页 -->
+      <view class="user-info-section" @tap="goToAuthor(note.userId)" hover-class="user-info-hover" :hover-stay-time="100">
         <image 
           v-if="note.authorAvatar" 
           :src="note.authorAvatar" 
@@ -83,7 +83,12 @@
           <text class="user-nickname">{{ note.authorNickname || note.authorName }}</text>
           <text class="user-username">@{{ note.authorUsername || '用户' + note.userId }}</text>
         </view>
-        <text class="publish-time">{{ formatTime(note.createdAt) }}</text>
+        <view class="user-info-right">
+          <text class="publish-time">{{ formatTime(note.createdAt) }}</text>
+          <svg class="arrow-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </view>
       </view>
 
       <!-- 作者和内容区 -->
@@ -294,7 +299,9 @@ const hasPurchased = ref(false)
 const isLiked = ref(false)
 const isFavorited = ref(false)
 const isSubscribed = ref(false)
-const isSelf = computed(() => userStore.userInfo?.id === note.value?.userId)
+const isSelf = computed(() => {
+  return userStore.userInfo?.id == note.value?.userId
+})
 
 // 笔记图片列表
 const noteImages = computed(() => {
@@ -592,7 +599,10 @@ const subscribeCreator = () => {
 }
 
 const goToAuthor = (userId: number) => {
-  if (isSelf.value) return
+  if (isSelf.value) {
+    uni.showToast({ title: '这是你自己', icon: 'none' })
+    return
+  }
   uni.navigateTo({ url: `/pages/user/profile?id=${userId}` })
 }
 
@@ -772,6 +782,11 @@ const formatTime = (time: string) => {
   padding: 14px 16px;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-light);
+  cursor: pointer;
+}
+
+.user-info-hover {
+  background: var(--bg-secondary);
 }
 
 .user-avatar {
@@ -800,10 +815,21 @@ const formatTime = (time: string) => {
   color: var(--text-tertiary);
 }
 
+.user-info-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .publish-time {
   font-size: 12px;
   color: var(--text-tertiary);
   white-space: nowrap;
+}
+
+.arrow-icon {
+  color: var(--text-tertiary);
+  opacity: 0.6;
 }
 
 /* 内容包裹区 */

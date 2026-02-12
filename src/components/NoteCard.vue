@@ -1,13 +1,21 @@
 <template>
   <view class="note-card" @click="$emit('click')">
     <!-- 封面图 -->
-    <view v-if="note.coverImage" class="note-cover">
+    <view class="note-cover">
       <image
+        v-if="note.coverImage"
         :src="note.coverImage"
         mode="widthFix"
         lazy-load
         class="cover-image"
       />
+      <!-- 默认封面占位图 -->
+      <view v-else class="default-cover">
+        <view class="default-cover-content">
+          <text class="default-cover-icon">📝</text>
+          <text class="default-cover-text">学习笔记</text>
+        </view>
+      </view>
 
       <!-- 分类标签 -->
       <view class="category-tag">{{ note.categoryName }}</view>
@@ -103,6 +111,34 @@ const formatNumber = (num: number): string => {
   width: 100%;
   height: auto;
   display: block;
+}
+
+.default-cover {
+  width: 100%;
+  aspect-ratio: 3/4;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--border-light) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.default-cover-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.default-cover-icon {
+  font-size: 48px;
+  opacity: 0.6;
+}
+
+.default-cover-text {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-weight: 500;
 }
 
 .note-content {
