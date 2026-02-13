@@ -19,130 +19,154 @@
 
     <!-- 内容区 -->
     <scroll-view scroll-y class="detail-content" @scrolltolower="loadMoreComments">
-      <!-- 笔记主体轮播（有图片才显示） -->
-      <view v-if="noteImages.length > 0" class="media-carousel">
-        <swiper 
-          class="media-swiper" 
-          :indicator-dots="true" 
-          :autoplay="false" 
-          :circular="true"
-          indicator-color="rgba(255, 255, 255, 0.4)"
-          indicator-active-color="#fff"
-          @change="onSwiperChange"
-        >
-          <swiper-item 
-            v-for="(img, index) in noteImages" 
-            :key="index"
-            @click="openFullscreenPreview(index)"
-          >
-            <image :src="img" mode="aspectFill" class="media-image"/>
-          </swiper-item>
-        </swiper>
-      </view>
-
-      <!-- 全屏图片预览 -->
-      <view v-if="showFullscreenPreview" class="fullscreen-preview" @click="closeFullscreenPreview">
-        <view class="preview-header">
-          <view class="preview-close" @click.stop="closeFullscreenPreview">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
+      <!-- 整个可见区域的马赛克遮罩 -->
+      <view v-if="!isVisible" class="full-mosaic-wrapper">
+        <view class="full-mosaic-overlay"></view>
+        
+        <!-- 保留用户信息可点击进入主页 -->
+        <view class="user-info-section" @tap="goToAuthor(note.userId)" hover-class="user-info-hover" :hover-stay-time="100">
+          <image 
+            v-if="note.authorAvatar" 
+            :src="note.authorAvatar" 
+            class="user-avatar"
+            mode="aspectFill"
+          />
+          <view class="user-info">
+            <text class="user-nickname">{{ note.authorNickname || note.authorName }}</text>
+            <text class="user-username">@{{ note.authorUsername || '用户' + note.userId }}</text>
+          </view>
+          <view class="user-info-right">
+            <text class="publish-time">{{ formatTime(note.createdAt) }}</text>
+            <svg class="arrow-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
             </svg>
           </view>
-          <text class="preview-counter">{{ currentPreviewIndex + 1 }} / {{ noteImages.length }}</text>
-        </view>
-        
-        <swiper 
-          class="preview-swiper" 
-          :current="currentPreviewIndex"
-          :autoplay="false"
-          @change="onPreviewSwiperChange"
-        >
-          <swiper-item v-for="(img, index) in noteImages" :key="index">
-            <image :src="img" mode="aspectFit" class="preview-image"/>
-          </swiper-item>
-        </swiper>
-        
-        <view class="preview-indicator">
-          <view 
-            v-for="(img, index) in noteImages" 
-            :key="index"
-            :class="['preview-dot', { active: index === currentPreviewIndex }]"
-          />
-        </view>
-      </view>
-
-      <!-- 用户信息区域（轮播图下方）- 点击进入创作者主页 -->
-      <view class="user-info-section" @tap="goToAuthor(note.userId)" hover-class="user-info-hover" :hover-stay-time="100">
-        <image 
-          v-if="note.authorAvatar" 
-          :src="note.authorAvatar" 
-          class="user-avatar"
-          mode="aspectFill"
-        />
-        <view class="user-info">
-          <text class="user-nickname">{{ note.authorNickname || note.authorName }}</text>
-          <text class="user-username">@{{ note.authorUsername || '用户' + note.userId }}</text>
-        </view>
-        <view class="user-info-right">
-          <text class="publish-time">{{ formatTime(note.createdAt) }}</text>
-          <svg class="arrow-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </view>
-      </view>
-
-      <!-- 作者和内容区 -->
-      <view class="content-wrapper">
-        <!-- 标题 -->
-        <view class="title-section">
-          <text class="detail-title">{{ note.title }}</text>
         </view>
 
-        <!-- 笔记内容 -->
-        <view class="content-body">
-          <text class="content-text">{{ note.content }}</text>
+        <!-- 作者和内容区 -->
+        <view class="content-wrapper">
+          <!-- 标题 -->
+          <view class="title-section">
+            <text class="detail-title">{{ note.title }}</text>
+          </view>
 
-          <!-- 如果是付费内容，显示遮罩 -->
-          <view v-if="note.visibility === 2 && !hasPurchased && !isSelf" class="paywall">
+          <!-- 笔记内容 -->
+          <view class="content-body">
+            <text class="content-text">{{ note.content }}</text>
+          </view>
+
+          <!-- 可见性提示框 -->
+          <view class="paywall">
             <view class="paywall-content">
-              <text class="paywall-title">继续阅读</text>
-              <text class="paywall-desc">订阅创作者或购买此笔记解锁完整内容</text>
-              <view class="paywall-price">
+              <view class="paywall-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#536471" stroke-width="1.5">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </view>
+              <text class="paywall-title">{{ getPaywallTitle() }}</text>
+              <text class="paywall-desc">{{ getPaywallDesc() }}</text>
+              <view v-if="note.visibility === 2 || note.visibility === 3" class="paywall-price">
                 <text class="price-label">价格</text>
                 <text class="price-value">¥{{ note.price }}</text>
               </view>
               <view class="paywall-actions">
-                <view class="btn-secondary" @click="buyNote">购买笔记</view>
-                <view class="btn-primary" @click="subscribeCreator">订阅创作者</view>
+                <view v-if="note.visibility === 2" class="btn-secondary" @click="buyNote">购买笔记</view>
+                <view v-if="note.visibility === 1 || note.visibility === 3" class="btn-primary" @click="subscribeCreator">订阅创作者</view>
+                <view v-if="note.visibility === 3" class="btn-secondary" @click="buyNote">购买笔记</view>
               </view>
             </view>
           </view>
+
+          <!-- 标签 -->
+          <view v-if="note.tags && note.tags.length > 0" class="tags-section">
+            <view v-for="(tag, index) in note.tags" :key="index" class="tag-item">
+              #{{ tag }}
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 可见的情况：正常显示所有内容 -->
+      <view v-else>
+        <!-- 笔记主体轮播 -->
+        <view v-if="noteImages.length > 0" class="media-carousel">
+          <swiper 
+            class="media-swiper" 
+            :indicator-dots="true" 
+            :autoplay="false" 
+            :circular="true"
+            indicator-color="rgba(255, 255, 255, 0.4)"
+            indicator-active-color="#fff"
+            @change="onSwiperChange"
+          >
+            <swiper-item 
+              v-for="(img, index) in noteImages" 
+              :key="index"
+              @click="openFullscreenPreview(index)"
+            >
+              <image :src="img" mode="aspectFill" class="media-image"/>
+            </swiper-item>
+          </swiper>
         </view>
 
-        <!-- 标签 -->
-        <view v-if="note.tags && note.tags.length > 0" class="tags-section">
-          <view v-for="(tag, index) in note.tags" :key="index" class="tag-item">
-            #{{ tag }}
+        <!-- 用户信息区域 -->
+        <view class="user-info-section" @tap="goToAuthor(note.userId)" hover-class="user-info-hover" :hover-stay-time="100">
+          <image 
+            v-if="note.authorAvatar" 
+            :src="note.authorAvatar" 
+            class="user-avatar"
+            mode="aspectFill"
+          />
+          <view class="user-info">
+            <text class="user-nickname">{{ note.authorNickname || note.authorName }}</text>
+            <text class="user-username">@{{ note.authorUsername || '用户' + note.userId }}</text>
+          </view>
+          <view class="user-info-right">
+            <text class="publish-time">{{ formatTime(note.createdAt) }}</text>
+            <svg class="arrow-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
           </view>
         </view>
 
-        <!-- 互动数据 -->
-        <view class="stats-bar">
-          <view class="stat-item">
-            <text class="stat-num">{{ note.viewCount || 0 }}</text>
-            <text class="stat-label">浏览</text>
+        <!-- 作者和内容区 -->
+        <view class="content-wrapper">
+          <!-- 标题 -->
+          <view class="title-section">
+            <text class="detail-title">{{ note.title }}</text>
           </view>
-          <view class="stat-item">
-            <text class="stat-num">{{ note.likeCount || 0 }}</text>
-            <text class="stat-label">点赞</text>
+
+          <!-- 笔记内容 -->
+          <view class="content-body">
+            <text class="content-text">{{ note.content }}</text>
           </view>
-          <view class="stat-item">
-            <text class="stat-num">{{ note.favoriteCount || 0 }}</text>
-            <text class="stat-label">收藏</text>
+
+          <!-- 标签 -->
+          <view v-if="note.tags && note.tags.length > 0" class="tags-section">
+            <view v-for="(tag, index) in note.tags" :key="index" class="tag-item">
+              #{{ tag }}
+            </view>
           </view>
-          <view class="stat-item">
-            <text class="stat-num">{{ note.shareCount || 0 }}</text>
-            <text class="stat-label">分享</text>
+
+          <!-- 互动数据 -->
+          <view class="stats-bar">
+            <view class="stat-item">
+              <text class="stat-num">{{ note.viewCount || 0 }}</text>
+              <text class="stat-label">浏览</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-num">{{ note.likeCount || 0 }}</text>
+              <text class="stat-label">点赞</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-num">{{ note.favoriteCount || 0 }}</text>
+              <text class="stat-label">收藏</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-num">{{ note.shareCount || 0 }}</text>
+              <text class="stat-label">分享</text>
+            </view>
           </view>
         </view>
       </view>
@@ -287,7 +311,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { noteApi, favoriteApi, ratingApi, shareApi, commentApi } from '@/api/note'
-import { subscriptionApi } from '@/api/message'
+import { subscriptionApi, paymentApi } from '@/api/message'
 import { useUserStore } from '@/stores/user'
 import type { Note } from '@/types/api.types'
 
@@ -296,11 +320,27 @@ const userStore = useUserStore()
 const noteId = ref<number>(0)
 const note = ref<Note | null>(null)
 const hasPurchased = ref(false)
+const isPurchased = ref(false)
 const isLiked = ref(false)
 const isFavorited = ref(false)
 const isSubscribed = ref(false)
 const isSelf = computed(() => {
   return userStore.userInfo?.id == note.value?.userId
+})
+
+const isVisible = computed(() => {
+  if (!note.value) return true
+  if (isSelf.value) return true
+  
+  const visibility = note.value.visibility
+  
+  if (visibility === 0) return true
+  if (visibility === 1) return isSubscribed.value
+  if (visibility === 2) return isPurchased.value
+  if (visibility === 3) return isSubscribed.value && isPurchased.value
+  if (visibility === 4) return false
+  
+  return true
 })
 
 // 笔记图片列表
@@ -392,15 +432,17 @@ const checkInteractions = async () => {
   if (!userStore.isLoggedIn) return
 
   try {
-    const [fav, rating, sub] = await Promise.all([
+    const [fav, rating, sub, purchased] = await Promise.all([
       favoriteApi.check(noteId.value).catch(() => false),
       ratingApi.getMyRating(noteId.value).catch(() => 0),
-      note.value ? subscriptionApi.checkSubscription(note.value.userId).catch(() => false) : false
+      note.value ? subscriptionApi.checkSubscription(note.value.userId).catch(() => false) : false,
+      note.value ? paymentApi.checkPurchased(noteId.value).catch(() => false) : false
     ])
 
     isFavorited.value = fav
     myRating.value = rating
     isSubscribed.value = sub
+    isPurchased.value = purchased
   } catch (error) {
     console.error('检查互动状态失败:', error)
   }
@@ -598,6 +640,28 @@ const subscribeCreator = () => {
   toggleSubscribe()
 }
 
+const getPaywallTitle = () => {
+  if (!note.value) return '继续阅读'
+  switch (note.value.visibility) {
+    case 1: return '订阅可见'
+    case 2: return '付费内容'
+    case 3: return '订阅后可付费'
+    case 4: return '私密笔记'
+    default: return '继续阅读'
+  }
+}
+
+const getPaywallDesc = () => {
+  if (!note.value) return '订阅创作者或购买此笔记解锁完整内容'
+  switch (note.value.visibility) {
+    case 1: return '订阅创作者后可查看完整内容'
+    case 2: return '购买此笔记解锁完整内容'
+    case 3: return '订阅创作者并购买后可查看完整内容'
+    case 4: return '只有作者本人可以查看'
+    default: return '订阅创作者或购买此笔记解锁完整内容'
+  }
+}
+
 const goToAuthor = (userId: number) => {
   if (isSelf.value) {
     uni.showToast({ title: '这是你自己', icon: 'none' })
@@ -684,6 +748,30 @@ const formatTime = (time: string) => {
 /* 内容区 */
 .detail-content {
   padding-top: 0;
+}
+
+/* 全屏限制内容遮罩 wrapper - 类似 X.com */
+.full-mosaic-wrapper {
+  position: relative;
+}
+
+.full-mosaic-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  pointer-events: none;
+  background: 
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.3) 0%,
+      rgba(0, 0, 0, 0.5) 50%,
+      rgba(0, 0, 0, 0.6) 100%
+    );
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 /* 媒体轮播 */
@@ -834,6 +922,7 @@ const formatTime = (time: string) => {
 
 /* 内容包裹区 */
 .content-wrapper {
+  position: relative;
   padding: 16px;
   background: var(--bg-card);
 }
@@ -853,7 +942,6 @@ const formatTime = (time: string) => {
 
 /* 内容体 */
 .content-body {
-  position: relative;
   margin-bottom: 16px;
 }
 
@@ -865,21 +953,30 @@ const formatTime = (time: string) => {
   white-space: pre-wrap;
 }
 
+/* 可见性提示框 - X.com 风格 */
 .paywall {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to bottom, transparent, var(--bg-card) 30%);
-  padding: 60px 0 0;
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
 }
 
 .paywall-content {
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  padding: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 24px 32px;
   text-align: center;
   border: 1px solid var(--border-light);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+}
+
+.paywall-icon {
+  margin-bottom: 12px;
+  color: var(--text-tertiary);
 }
 
 .paywall-title {
@@ -887,14 +984,15 @@ const formatTime = (time: string) => {
   font-weight: 700;
   color: var(--text-primary);
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .paywall-desc {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
   display: block;
   margin-bottom: 16px;
+  line-height: 1.5;
 }
 
 .paywall-price {
@@ -919,11 +1017,11 @@ const formatTime = (time: string) => {
 .paywall-actions {
   display: flex;
   gap: 10px;
+  justify-content: center;
 }
 
 .btn-primary, .btn-secondary {
-  flex: 1;
-  padding: 10px 16px;
+  padding: 10px 20px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;

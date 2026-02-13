@@ -9,10 +9,10 @@
       <text class="nav-title">{{ isEdit ? '编辑笔记' : '创建笔记' }}</text>
       <view class="nav-right">
         <view
-          :class="['save-btn', { loading: loading }]"
+          :class="['save-btn', { loading: loading || uploadingCover }]"
           @click="handleSave"
         >
-          <text v-if="!loading">保存</text>
+          <text v-if="!loading && !uploadingCover">保存</text>
           <view v-else class="btn-spinner"></view>
         </view>
       </view>
@@ -29,7 +29,16 @@
           </svg>
           <text>添加封面图</text>
         </view>
-        <image v-else :src="form.coverImage" class="cover-image" mode="aspectFill" @click="chooseCover"/>
+        <view v-else class="cover-wrapper">
+          <image :src="form.coverImage" class="cover-image" mode="aspectFill" @click="chooseCover"/>
+          <!-- 删除封面按钮 -->
+          <view class="delete-cover-btn" @click.stop="removeCover">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </view>
+        </view>
       </view>
 
       <!-- 标题 -->
@@ -245,6 +254,8 @@ onMounted(async () => {
   }
 })
 
+const uploadingCover = ref(false)
+
 const chooseCover = async () => {
   try {
     // 选择图片
@@ -252,21 +263,57 @@ const chooseCover = async () => {
     const tempFilePath = res.tempFilePaths[0];
     
     // 显示上传中
+    uploadingCover.value = true
     uni.showLoading({ title: '上传中...', mask: true });
     
     // 上传图片到服务器
     const result = await uploadPublicFile(tempFilePath);
     
+    // 添加时间戳参数防止缓存，并确保MinIO已完成写入
+    const timestamp = Date.now();
+    const imageUrl = result.fileUrl.includes('?') 
+      ? `${result.fileUrl}&t=${timestamp}` 
+      : `${result.fileUrl}?t=${timestamp}`;
+    
+    // 预加载图片确保可用
+    await preloadImage(imageUrl);
+    
     // 保存返回的URL
-    form.value.coverImage = result.fileUrl;
+    form.value.coverImage = imageUrl;
     
     uni.showToast({ title: '上传成功', icon: 'success' });
   } catch (error) {
     console.error('封面上传失败:', error);
     uni.showToast({ title: '上传失败', icon: 'none' });
   } finally {
+    uploadingCover.value = false
     uni.hideLoading();
   }
+}
+
+// 删除封面
+const removeCover = () => {
+  uni.showModal({
+    title: '删除封面',
+    content: '确定要删除当前封面吗？',
+    confirmColor: '#F44336',
+    success: (res) => {
+      if (res.confirm) {
+        form.value.coverImage = ''
+        uni.showToast({ title: '已删除', icon: 'success' })
+      }
+    }
+  })
+}
+
+// 预加载图片确保可用
+const preloadImage = (url: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error('图片加载失败'));
+    img.src = url;
+  });
 }
 
 // 选择并上传文件
@@ -363,6 +410,11 @@ const onVisibilityChange = (e: any) => {
 }
 
 const handleSave = async () => {
+  if (uploadingCover.value) {
+    uni.showToast({ title: '封面上传中，请稍候...', icon: 'none' })
+    return
+  }
+
   if (!form.value.title.trim()) {
     uni.showToast({ title: '请输入标题', icon: 'none' })
     return
@@ -386,7 +438,7 @@ const handleSave = async () => {
       content: form.value.content,
       categoryId: form.value.categoryId,
       visibility: form.value.visibility,
-      price: form.value.visibility === 2 ? parseFloat(form.value.price) : 0,
+      price: (form.value.visibility === 2 || form.value.visibility === 3) ? (parseFloat(form.value.price) || 0) : 0,
       tags: form.value.tags,
       coverImage: form.value.coverImage,
       originalFileId: form.value.originalFileId,
@@ -410,13 +462,9 @@ const handleSave = async () => {
     })
 
     setTimeout(() => {
-      // 保存后返回上一页，并通知刷新
-      const pages = getCurrentPages()
-      const prevPage = pages[pages.length - 2]
-      if (prevPage) {
-        // 设置刷新标志
-        prevPage.$vm.needRefresh = true
-      }
+      // 发送全局事件通知列表页刷新
+      uni.$emit('notes-updated')
+      
       uni.navigateBack({
         success: () => {
           uni.showToast({ title: '保存成功', icon: 'success', duration: 1500 })
@@ -559,6 +607,29 @@ const goBack = () => {
   height: 200px;
   border-radius: 12px;
   object-fit: cover;
+}
+
+.cover-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.delete-cover-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.delete-cover-btn:active {
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .input-section {

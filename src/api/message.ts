@@ -132,6 +132,11 @@ export const paymentApi = {
   // 获取我的订单
   getMyOrders: () => {
     return get<any[]>('/payment/my-orders')
+  },
+
+  // 检查是否已购买笔记
+  checkPurchased: (noteId: number) => {
+    return get<boolean>(`/payment/check-purchased/${noteId}`)
   }
 }
 

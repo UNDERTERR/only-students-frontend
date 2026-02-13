@@ -126,17 +126,23 @@ const needRefresh = ref(false)
 
 onMounted(() => {
   loadNotes()
-})
-
-onShow(() => {
-  // 如果需要刷新，则重新加载数据
-  if (needRefresh.value) {
+  
+  // 监听笔记更新事件
+  uni.$on('notes-updated', () => {
+    console.log('收到笔记更新事件，刷新列表')
     page.value = 1
     hasMore.value = true
     notes.value = []
     loadNotes()
-    needRefresh.value = false
-  }
+  })
+})
+
+onShow(() => {
+  // 每次显示页面都刷新，确保数据最新
+  page.value = 1
+  hasMore.value = true
+  notes.value = []
+  loadNotes()
 })
 
 const loadNotes = async () => {

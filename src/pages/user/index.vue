@@ -523,10 +523,10 @@ const logout = () => {
 
 .wallet-card {
   margin: 16px;
-  background: linear-gradient(135deg, var(--accent-warm), var(--accent-coral));
+  background: var(--bg-card);
   border-radius: 16px;
   padding: 20px;
-  color: white;
+  border: 1px solid var(--border-light);
 }
 
 .wallet-header {
@@ -538,12 +538,13 @@ const logout = () => {
 
 .wallet-title {
   font-size: 14px;
-  opacity: 0.9;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .wallet-detail {
   font-size: 12px;
-  opacity: 0.8;
+  color: var(--accent-warm);
 }
 
 .wallet-balance {
@@ -552,7 +553,7 @@ const logout = () => {
 
 .balance-label {
   font-size: 13px;
-  opacity: 0.9;
+  color: var(--text-tertiary);
   display: block;
   margin-bottom: 4px;
 }
@@ -560,11 +561,12 @@ const logout = () => {
 .balance-amount {
   font-size: 36px;
   font-weight: 700;
+  color: var(--accent-warm);
 }
 
 .wallet-income {
   font-size: 13px;
-  opacity: 0.9;
+  color: var(--text-secondary);
   margin-bottom: 16px;
 }
 
@@ -576,16 +578,19 @@ const logout = () => {
 .wallet-btn {
   flex: 1;
   padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--bg-secondary);
   border-radius: 20px;
   font-size: 14px;
   font-weight: 600;
   text-align: center;
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
 }
 
 .wallet-btn.primary {
-  background: white;
-  color: var(--accent-warm);
+  background: var(--accent-warm);
+  color: white;
+  border: none;
 }
 
 .menu-section {
