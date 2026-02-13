@@ -86,7 +86,7 @@ export const favoriteApi = {
 export const ratingApi = {
   // 评分笔记（score: 1-5）
   rate: (noteId: number, score: number) => {
-    return post<void>(`/rating/${noteId}`, { score })
+    return post<void>(`/rating/${noteId}?score=${score}`)
   },
 
   // 获取笔记平均评分

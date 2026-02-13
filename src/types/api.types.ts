@@ -79,7 +79,8 @@ export interface Note {
   pdfFileId?: number
   status: number
   viewCount: number
-  likeCount: number
+  ratingCount: number
+  averageRating: number
   favoriteCount: number
   commentCount: number
   shareCount: number

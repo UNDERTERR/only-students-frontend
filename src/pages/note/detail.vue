@@ -187,8 +187,13 @@
               <text class="stat-label">浏览</text>
             </view>
             <view class="stat-item">
-              <text class="stat-num">{{ note.likeCount || 0 }}</text>
-              <text class="stat-label">点赞</text>
+              <view class="rating-display">
+                <svg class="rating-star-icon" width="14" height="14" viewBox="0 0 24 24" fill="#FFC107" stroke="#FFC107" stroke-width="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                <text class="stat-num">{{ note.averageRating ? Number(note.averageRating).toFixed(1) : '0.0' }}</text>
+              </view>
+              <text class="stat-label">评分</text>
             </view>
             <view class="stat-item">
               <text class="stat-num">{{ note.favoriteCount || 0 }}</text>
@@ -200,37 +205,6 @@
             </view>
           </view>
         </view>
-      </view>
-
-      <!-- 评分 -->
-      <view class="rating-section">
-        <view class="rating-header">
-          <text class="section-title">评分</text>
-          <view v-if="averageRating > 0" class="rating-info">
-            <text class="rating-score">{{ averageRating.toFixed(1) }}</text>
-            <text class="rating-count">({{ ratingCount }}人评分)</text>
-          </view>
-        </view>
-        <view class="rating-stars">
-          <view
-            v-for="star in 5"
-            :key="star"
-            class="star"
-            @click="rateNote(star)"
-          >
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              :fill="star <= (myRating || 0) ? '#FFC107' : 'none'"
-              :stroke="star <= (myRating || 0) ? '#FFC107' : '#DDD'"
-              stroke-width="2"
-            >
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-          </view>
-        </view>
-        <text v-if="myRating" class="my-rating">我的评分: {{ myRating }}星</text>
       </view>
 
       <!-- 评论列表 -->
@@ -289,11 +263,11 @@
         <text class="placeholder">写评论...</text>
       </view>
       <view class="action-btns">
-        <view class="action-btn" @click="toggleLike">
-          <svg :class="{ active: isLiked }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        <view class="action-btn" @click="showRatingPopup">
+          <svg :class="{ active: myRating > 0 }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
           </svg>
-          <text>{{ note.likeCount || 0 }}</text>
+          <text>{{ myRating || '评分' }}</text>
         </view>
         <view class="action-btn" @click="toggleFavorite">
           <svg :class="{ active: isFavorited }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -311,6 +285,34 @@
           </svg>
           <text>分享</text>
         </view>
+      </view>
+    </view>
+
+    <!-- 评分弹窗 -->
+    <view v-if="showRating" class="rating-popup">
+      <view class="rating-popup-mask" @click="closeRatingPopup"></view>
+      <view class="rating-popup-content">
+        <text class="rating-popup-title">为笔记评分</text>
+        <view class="rating-stars">
+          <view
+            v-for="star in 5"
+            :key="star"
+            class="rating-star"
+            @click="submitRating(star)"
+          >
+            <svg
+              width="36"
+              height="36"
+              viewBox="0 0 24 24"
+              :fill="star <= tempRating ? '#FFC107' : 'none'"
+              :stroke="star <= tempRating ? '#FFC107' : '#DDD'"
+              stroke-width="2"
+            >
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </view>
+        </view>
+        <text v-if="tempRating > 0" class="rating-text">{{ tempRating }}星</text>
       </view>
     </view>
 
@@ -352,7 +354,9 @@ const noteId = ref<number>(0)
 const note = ref<Note | null>(null)
 const hasPurchased = ref(false)
 const isPurchased = ref(false)
-const isLiked = ref(false)
+const myRating = ref(0)
+const showRating = ref(false)
+const tempRating = ref(0)
 const isFavorited = ref(false)
 const isSubscribed = ref(false)
 const isSelf = computed(() => {
@@ -389,11 +393,6 @@ const noteImages = computed(() => {
   // 去重
   return [...new Set(images)]
 })
-
-// 评分
-const averageRating = ref(0)
-const ratingCount = ref(0)
-const myRating = ref(0)
 
 // 评论
 const comments = ref<any[]>([])
@@ -452,14 +451,6 @@ const loadNoteDetail = async () => {
   try {
     note.value = await noteApi.getById(noteId.value)
 
-    // 加载评分信息
-    const [avg, count] = await Promise.all([
-      ratingApi.getAverage(noteId.value).catch(() => 0),
-      ratingApi.getCount(noteId.value).catch(() => 0)
-    ])
-    averageRating.value = avg
-    ratingCount.value = count
-
     // 笔记加载完成后再检查互动状态
     checkInteractions()
   } catch (error) {
@@ -471,15 +462,15 @@ const checkInteractions = async () => {
   if (!userStore.isLoggedIn || !note.value) return
 
   try {
-    const [fav, rating, sub, purchased] = await Promise.all([
+    const [fav, ratingRes, sub, purchased] = await Promise.all([
       favoriteApi.check(noteId.value).catch(() => false),
-      ratingApi.getMyRating(noteId.value).catch(() => 0),
+      ratingApi.getMyRating(noteId.value).catch(() => null),
       subscriptionApi.checkSubscription(note.value.userId).catch(() => false),
       paymentApi.checkPurchased(noteId.value).catch(() => false)
     ])
 
     isFavorited.value = fav
-    myRating.value = rating
+    myRating.value = ratingRes?.score || 0
     isSubscribed.value = sub
     isPurchased.value = purchased
   } catch (error) {
@@ -511,18 +502,30 @@ const loadMoreComments = () => {
   loadComments()
 }
 
-const toggleLike = async () => {
+const showRatingPopup = () => {
   if (!userStore.isLoggedIn) {
     uni.navigateTo({ url: '/pages/auth/login' })
     return
   }
+  tempRating.value = myRating.value || 0
+  showRating.value = true
+}
 
-  // 注意：后端没有单独的点赞接口，点赞通过评分实现（1星表示点赞）
-  if (!isLiked.value) {
-    await ratingApi.rate(noteId.value, 5)
-    isLiked.value = true
-    note.value!.likeCount++
-    uni.showToast({ title: '已点赞', icon: 'success' })
+const closeRatingPopup = () => {
+  showRating.value = false
+  tempRating.value = 0
+}
+
+const submitRating = async (score: number) => {
+  try {
+    await ratingApi.rate(noteId.value, score)
+    myRating.value = score
+    note.value!.averageRating = await ratingApi.getAverage(noteId.value)
+    note.value!.ratingCount = (note.value!.ratingCount || 0) + (myRating.value === score ? 1 : 0)
+    closeRatingPopup()
+    uni.showToast({ title: `已评分 ${score} 星`, icon: 'success' })
+  } catch (error) {
+    uni.showToast({ title: '评分失败', icon: 'none' })
   }
 }
 
@@ -546,25 +549,6 @@ const toggleFavorite = async () => {
     }
   } catch (error) {
     uni.showToast({ title: '操作失败', icon: 'none' })
-  }
-}
-
-const rateNote = async (score: number) => {
-  if (!userStore.isLoggedIn) {
-    uni.navigateTo({ url: '/pages/auth/login' })
-    return
-  }
-
-  try {
-    await ratingApi.rate(noteId.value, score)
-    myRating.value = score
-    uni.showToast({ title: `已评分 ${score} 星`, icon: 'success' })
-
-    // 重新加载平均评分
-    const avg = await ratingApi.getAverage(noteId.value)
-    averageRating.value = avg
-  } catch (error) {
-    uni.showToast({ title: '评分失败', icon: 'none' })
   }
 }
 
@@ -1135,63 +1119,76 @@ const formatTime = (time: string) => {
   color: var(--text-tertiary);
 }
 
-/* 评分 */
-.rating-section {
-  padding: 16px;
-  background: var(--bg-card);
-  margin-top: 12px;
-}
-
-.rating-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.section-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.rating-info {
+.rating-display {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
 }
 
-.rating-score {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--accent-warm);
+.rating-star-icon {
+  margin-right: 2px;
 }
 
-.rating-count {
-  font-size: 12px;
-  color: var(--text-tertiary);
-}
-
-.rating-stars {
+/* 评分弹窗 */
+.rating-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
   display: flex;
-  gap: 6px;
+  align-items: center;
   justify-content: center;
-  margin-bottom: 6px;
 }
 
-.star {
+.rating-popup-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.rating-popup-content {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 24px 32px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.rating-popup-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 16px;
+}
+
+.rating-popup-content .rating-stars {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.rating-star {
   cursor: pointer;
   transition: transform 0.2s;
 }
 
-.star:active {
+.rating-star:active {
   transform: scale(1.2);
 }
 
-.my-rating {
-  text-align: center;
-  font-size: 13px;
-  color: var(--text-secondary);
+.rating-text {
+  display: block;
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--accent-warm);
+  font-weight: 600;
 }
 
 /* 评论 */
