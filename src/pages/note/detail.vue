@@ -110,6 +110,37 @@
           </swiper>
         </view>
 
+        <!-- 全屏图片预览 -->
+        <view v-if="showFullscreenPreview" class="fullscreen-preview" @click="closeFullscreenPreview">
+          <view class="preview-header">
+            <view class="preview-close" @click.stop="closeFullscreenPreview">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </view>
+            <text class="preview-counter">{{ currentPreviewIndex + 1 }} / {{ noteImages.length }}</text>
+          </view>
+          
+          <swiper 
+            class="preview-swiper" 
+            :current="currentPreviewIndex"
+            :autoplay="false"
+            @change="onPreviewSwiperChange"
+          >
+            <swiper-item v-for="(img, index) in noteImages" :key="index">
+              <image :src="img" mode="aspectFit" class="preview-image"/>
+            </swiper-item>
+          </swiper>
+          
+          <view class="preview-indicator">
+            <view 
+              v-for="(img, index) in noteImages" 
+              :key="index"
+              :class="['preview-dot', { active: index === currentPreviewIndex }]"
+            />
+          </view>
+        </view>
+
         <!-- 用户信息区域 -->
         <view class="user-info-section" @tap="goToAuthor(note.userId)" hover-class="user-info-hover" :hover-stay-time="100">
           <image 
@@ -404,11 +435,16 @@ onMounted(() => {
   const currentPage = pages[pages.length - 1]
   const id = currentPage.options?.id
 
+  // 保存来源页面（用于刷新后返回）
+  if (pages.length > 1) {
+    const refererPage = pages[pages.length - 2]
+    uni.setStorageSync('detail_referer', '/' + refererPage.route)
+  }
+
   if (id) {
     noteId.value = parseInt(id)
     loadNoteDetail()
     loadComments()
-    checkInteractions()
   }
 })
 
@@ -423,20 +459,23 @@ const loadNoteDetail = async () => {
     ])
     averageRating.value = avg
     ratingCount.value = count
+
+    // 笔记加载完成后再检查互动状态
+    checkInteractions()
   } catch (error) {
     uni.showToast({ title: '加载失败', icon: 'none' })
   }
 }
 
 const checkInteractions = async () => {
-  if (!userStore.isLoggedIn) return
+  if (!userStore.isLoggedIn || !note.value) return
 
   try {
     const [fav, rating, sub, purchased] = await Promise.all([
       favoriteApi.check(noteId.value).catch(() => false),
       ratingApi.getMyRating(noteId.value).catch(() => 0),
-      note.value ? subscriptionApi.checkSubscription(note.value.userId).catch(() => false) : false,
-      note.value ? paymentApi.checkPurchased(noteId.value).catch(() => false) : false
+      subscriptionApi.checkSubscription(note.value.userId).catch(() => false),
+      paymentApi.checkPurchased(noteId.value).catch(() => false)
     ])
 
     isFavorited.value = fav
@@ -686,7 +725,22 @@ const showMoreActions = () => {
 }
 
 const goBack = () => {
-  uni.navigateBack()
+  const pages = getCurrentPages()
+  
+  if (pages.length > 1) {
+    // 有页面栈，直接返回
+    uni.navigateBack({ delta: 1 })
+  } else {
+    // 刷新后没有页面栈，使用保存的来源页面
+    const referer = uni.getStorageSync('detail_referer')
+    const listPages = ['/pages/index/index', '/pages/discover/index', '/pages/user/my-favorites', '/pages/user/my-notes', '/pages/user/my-subscriptions', '/pages/user/profile']
+    
+    if (referer && listPages.some(p => referer.includes(p))) {
+      uni.reLaunch({ url: referer })
+    } else {
+      uni.reLaunch({ url: '/pages/discover/index' })
+    }
+  }
 }
 
 const formatTime = (time: string) => {

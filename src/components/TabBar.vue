@@ -64,8 +64,8 @@ const switchTab = (index: number) => {
     return
   }
 
-  // 使用 redirectTo 跳转（因为没有配置 tabBar）
-  uni.redirectTo({
+  // 使用 reLaunch 跳转（可以跳转到任意页面）
+  uni.reLaunch({
     url: tab.path
   })
 }
