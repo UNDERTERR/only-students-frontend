@@ -113,3 +113,54 @@ export const getFilePreviewUrl = (fileId: number): Promise<string> => {
     })
   })
 }
+
+// 删除文件
+export const deleteFile = (fileId: number): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const token = uni.getStorageSync('token')
+    const header: Record<string, string> = {}
+    if (token) header['Authorization'] = `Bearer ${token}`
+
+    uni.request({
+      url: `${API_BASE_URL}/file/${fileId}`,
+      method: 'DELETE',
+      header,
+      success: (res: any) => {
+        if (res.data.code === 200) {
+          resolve()
+        } else {
+          reject(new Error(res.data.message || '删除文件失败'))
+        }
+      },
+      fail: reject
+    })
+  })
+}
+
+// 获取文件转换状态
+export interface ConvertStatusResult {
+  status: number  // 0=无转换任务, 1=待处理, 2=处理中, 3=转换成功, 4=转换失败
+  pdfFileId: number | null  // 转换成功后的PDF文件ID
+}
+
+export const getFileConvertStatus = (fileId: number): Promise<ConvertStatusResult> => {
+  return new Promise((resolve, reject) => {
+    const token = uni.getStorageSync('token')
+    const header: Record<string, string> = {}
+    if (token) header['Authorization'] = `Bearer ${token}`
+
+    uni.request({
+      url: `${API_BASE_URL}/file/convert-status/${fileId}`,
+      method: 'GET',
+      header,
+      success: (res: any) => {
+        if (res.data.code === 200) {
+          resolve(res.data.data)
+        } else {
+          reject(new Error(res.data.message || '获取转换状态失败'))
+        }
+      },
+      fail: reject
+    })
+  })
+}

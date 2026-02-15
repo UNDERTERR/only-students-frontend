@@ -29,7 +29,7 @@
           <!-- 已上传的附件 -->
           <view 
             v-for="(file, index) in form.attachments" 
-            :key="index"
+            :key="file.fileId || file.fileName || index"
             class="attachment-item"
           >
             <!-- 图片预览 -->
@@ -202,7 +202,7 @@ import { NOTE_CATEGORIES } from '@/config/api.config'
 import { noteApi } from '@/api/note'
 import { useUserStore } from '@/stores/user'
 import { API_BASE_URL } from '@/config/api.config'
-import { uploadPrivateFile, uploadNoteFile } from '@/api/file'
+import { uploadPrivateFile, uploadNoteFile, deleteFile } from '@/api/file'
 
 const noteStore = useNoteStore()
 const userStore = useUserStore()
@@ -253,7 +253,9 @@ onMounted(async () => {
     uni.setStorageSync('publish_referer', '/' + refererPage.route)
   }
   
-  if (isEdit.value && noteId.value) {
+  // 避免重复加载数据（防止覆盖用户的编辑）
+  // 只有当表单为空时才加载（说明是首次进入）
+  if (isEdit.value && noteId.value && form.value.attachments.length === 0 && !form.value.title) {
     try {
       loading.value = true
       const note = await noteApi.getById(noteId.value)
@@ -271,10 +273,15 @@ onMounted(async () => {
             ? JSON.parse(note.attachments) 
             : note.attachments
           form.value.attachments = attachments || []
+          // 保存原始附件列表的副本（用于保存时对比）
+          originalAttachments.value = JSON.parse(JSON.stringify(form.value.attachments))
         } catch (e) {
           console.error('解析附件失败:', e)
           form.value.attachments = []
+          originalAttachments.value = []
         }
+      } else {
+        originalAttachments.value = []
       }
     } catch (error) {
       console.error('加载笔记失败:', error)
@@ -285,16 +292,26 @@ onMounted(async () => {
   }
 })
 
-// 移除附件
-const removeAttachment = (index: number) => {
+// 存储原始附件列表（用于保存时对比）
+const originalAttachments = ref<any[]>([])
+
+// 移除附件（仅本地移除，保存时才提交到后端）
+const removeAttachment = async (index: number) => {
+  const file = form.value.attachments[index]
+  if (!file) return
+
   uni.showModal({
     title: '确认删除',
-    content: '确定要删除这个附件吗？',
+    content: '确定要删除这个附件吗？点击保存后才会真正删除。',
     confirmColor: '#F44336',
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm) {
-        form.value.attachments.splice(index, 1)
-        uni.showToast({ title: '已删除', icon: 'success' })
+        // 从表单中移除（仅本地）
+        const newAttachments = [...form.value.attachments]
+        newAttachments.splice(index, 1)
+        form.value.attachments = newAttachments
+        
+        uni.showToast({ title: '已移除（请保存）', icon: 'success' })
       }
     }
   })
@@ -551,6 +568,25 @@ const handleSave = async () => {
   loading.value = true
 
   try {
+    // 如果是编辑模式，先删除被移除的附件文件
+    if (isEdit.value && noteId.value) {
+      const currentFileIds = new Set(form.value.attachments.map((att: any) => att.fileId).filter(Boolean))
+      const deletedAttachments = originalAttachments.value.filter((att: any) => att.fileId && !currentFileIds.has(att.fileId))
+      
+      if (deletedAttachments.length > 0) {
+        // 并行删除所有被移除的附件文件
+        await Promise.all(deletedAttachments.map(async (att: any) => {
+          try {
+            await deleteFile(att.fileId)
+          } catch (error) {
+            console.error('后端文件删除失败:', att.fileId, error)
+          }
+        }))
+        // 更新原始附件列表
+        originalAttachments.value = JSON.parse(JSON.stringify(form.value.attachments))
+      }
+    }
+
     const noteData = {
       title: form.value.title,
       content: form.value.content,
@@ -559,7 +595,6 @@ const handleSave = async () => {
       price: (form.value.visibility === 2 || form.value.visibility === 3) ? (parseFloat(form.value.price) || 0) : 0,
       tags: form.value.tags,
       attachments: form.value.attachments.length > 0 ? JSON.stringify(form.value.attachments) : null,
-      authorNickname: userStore.userInfo?.nickname,
       authorUsername: userStore.userInfo?.username,
       authorAvatar: userStore.userInfo?.avatar,
     }
@@ -581,6 +616,9 @@ const handleSave = async () => {
     setTimeout(() => {
       // 发送全局事件通知列表页刷新
       uni.$emit('notes-updated')
+      
+      // 设置刷新标记（备用方案）
+      uni.setStorageSync('need_refresh_notes', true)
       
       uni.navigateBack({
         success: () => {

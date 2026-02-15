@@ -22,8 +22,14 @@
       <!-- 笔记图片展示 -->
       <view v-if="noteImages && noteImages.length > 0" class="media-carousel" :class="{ blurred: !isVisible }">
         <!-- 单张图片 -->
-        <view v-if="noteImages.length === 1" class="single-image" @click="isVisible && openFullscreenPreview(0)">
-          <image :src="noteImages[0]" mode="aspectFill" class="media-image"/>
+        <view v-if="noteImages.length === 1" class="single-image" @click="handleMediaClick(0)">
+          <image v-if="!noteImages[0].isPdf" :src="noteImages[0].url" mode="aspectFill" class="media-image"/>
+          <view v-else class="pdf-preview">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="#E53935">
+              <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
+            </svg>
+            <text class="pdf-label">PDF预览</text>
+          </view>
         </view>
         <!-- 多张图片使用 swiper -->
         <swiper 
@@ -39,9 +45,15 @@
           <swiper-item 
             v-for="(img, index) in noteImages" 
             :key="index"
-            @click="isVisible && openFullscreenPreview(index)"
+            @click="handleMediaClick(index)"
           >
-            <image :src="img" mode="aspectFill" class="media-image"/>
+            <image v-if="!img.isPdf" :src="img.url" mode="aspectFill" class="media-image"/>
+            <view v-else class="pdf-preview">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="#E53935">
+                <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
+              </svg>
+              <text class="pdf-label">PDF预览</text>
+            </view>
           </swiper-item>
         </swiper>
       </view>
@@ -124,7 +136,7 @@
                 <path d="M18 6L6 18M6 6l12 12"/>
               </svg>
             </view>
-            <text class="preview-counter">{{ currentPreviewIndex + 1 }} / {{ noteImages.length }}</text>
+            <text class="preview-counter">{{ currentPreviewIndex + 1 }} / {{ imageCount }}</text>
           </view>
           
           <swiper 
@@ -133,14 +145,14 @@
             :autoplay="false"
             @change="onPreviewSwiperChange"
           >
-            <swiper-item v-for="(img, index) in noteImages" :key="index">
-              <image :src="img" mode="aspectFit" class="preview-image"/>
+            <swiper-item v-for="(img, index) in imageList" :key="index">
+              <image :src="img.url" mode="aspectFit" class="preview-image"/>
             </swiper-item>
           </swiper>
           
           <view class="preview-indicator">
             <view 
-              v-for="(img, index) in noteImages" 
+              v-for="(img, index) in imageList" 
               :key="index"
               :class="['preview-dot', { active: index === currentPreviewIndex }]"
             />
@@ -371,9 +383,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { noteApi, favoriteApi, ratingApi, shareApi, commentApi } from '@/api/note'
 import { subscriptionApi, paymentApi } from '@/api/message'
-import { getFilePreviewUrl } from '@/api/file'
+import { getFilePreviewUrl, getFileConvertStatus } from '@/api/file'
 import { useUserStore } from '@/stores/user'
 import type { Note } from '@/types/api.types'
 
@@ -382,6 +395,7 @@ const userStore = useUserStore()
 const noteId = ref<number>(0)
 const note = ref<Note | null>(null)
 const previewUrls = ref<Record<number, string>>({})
+const convertStatus = ref<Record<number, { status: number, pdfFileId: number | null }>>({})
 const hasPurchased = ref(false)
 const isPurchased = ref(false)
 const myRating = ref(0)
@@ -408,10 +422,10 @@ const isVisible = computed(() => {
   return true
 })
 
-// 笔记图片列表（从 attachments 中提取图片）
+// 笔记媒体列表（只显示图片和可预览PDF）
 const noteImages = computed(() => {
   if (!note.value) return []
-  const images: string[] = []
+  const images: { url: string, isPdf: boolean, pdfFileId?: number, fileId?: number }[] = []
   if (note.value.attachments) {
     try {
       let attachments = note.value.attachments
@@ -423,12 +437,29 @@ const noteImages = computed(() => {
         attachments.forEach((att: any) => {
           if (!att) return
           const type = (att.fileType || '').toLowerCase()
+          const fileId = Number(att.fileId)
+          const convStatus = fileId ? convertStatus.value[fileId] : null
+          
+          // 图片类型
           if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(type)) {
-            // 优先使用预览URL，否则使用原始fileUrl
-            const url = att.fileId && previewUrls.value[att.fileId] 
-              ? previewUrls.value[att.fileId] 
+            const url = fileId && previewUrls.value[fileId] 
+              ? previewUrls.value[fileId] 
               : att.fileUrl
-            images.push(url)
+            images.push({ url, isPdf: false })
+          }
+          // PDF类型 - 使用预览URL
+          else if (type === 'pdf' && fileId) {
+            const url = previewUrls.value[fileId] || att.fileUrl
+            images.push({ url, isPdf: true, fileId })
+          }
+          // Office文件 - 检查转换状态，只有转换成功才显示
+          else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(type) && fileId) {
+            if (convStatus && convStatus.status === 2 && convStatus.pdfFileId) {
+              // 转换成功(status=2)，使用PDF预览
+              const pdfUrl = previewUrls.value[convStatus.pdfFileId] || ''
+              images.push({ url: pdfUrl, isPdf: true, pdfFileId: convStatus.pdfFileId, fileId })
+            }
+            // 转换未完成或失败，不添加到轮播
           }
         })
       }
@@ -439,7 +470,7 @@ const noteImages = computed(() => {
   return images
 })
 
-// 笔记附件列表（文档等非图片）
+// 笔记附件列表（不能预览的文件：未转换的Office文件+其他文件）
 const noteAttachments = computed(() => {
   if (!note.value) return []
   if (note.value.attachments) {
@@ -451,19 +482,39 @@ const noteAttachments = computed(() => {
         if (!attachments.trim()) return []
         attachments = JSON.parse(attachments)
       }
-      // 确保是数组
+      // 确保是数组 - 只保留不能预览的文件
       if (Array.isArray(attachments)) {
         return attachments.filter((att: any) => {
           if (!att) return false
           const type = (att.fileType || '').toLowerCase()
-          if (!['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(type)) {
-            // 添加预览URL
-            att.previewUrl = att.fileId && previewUrls.value[att.fileId] 
-              ? previewUrls.value[att.fileId] 
+          const fileId = Number(att.fileId)
+          const convStatus = fileId ? convertStatus.value[fileId] : null
+          
+          // 图片和已转换的PDF不在附件列表显示
+          if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(type)) {
+            return false
+          }
+          // PDF不在附件列表显示
+          if (type === 'pdf') {
+            return false
+          }
+          // Office文件 - 只有未转换的才显示在附件列表
+          if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(type)) {
+            // 如果转换成功(status=2)，不显示（已在轮播中显示PDF）
+            if (convStatus && convStatus.status === 2 && convStatus.pdfFileId) {
+              return false
+            }
+            // 未转换的显示在附件列表
+            att.previewUrl = fileId && previewUrls.value[fileId] 
+              ? previewUrls.value[fileId] 
               : att.fileUrl
             return true
           }
-          return false
+          // 其他文件显示在附件列表
+          att.previewUrl = fileId && previewUrls.value[fileId] 
+            ? previewUrls.value[fileId] 
+            : att.fileUrl
+          return true
         })
       }
     } catch (e) {
@@ -486,6 +537,53 @@ const replyTo = ref<any>(null)
 const showFullscreenPreview = ref(false)
 const currentPreviewIndex = ref(0)
 const currentSwiperIndex = ref(0)
+
+// 只显示图片的数量（不含PDF）
+const imageCount = computed(() => {
+  return noteImages.value.filter(img => !img.isPdf).length
+})
+
+// 只包含图片的列表（用于全屏预览）
+const imageList = computed(() => {
+  return noteImages.value.filter(img => !img.isPdf)
+})
+
+// 处理媒体点击
+const handleMediaClick = (index: number) => {
+  if (!isVisible.value) return
+  
+  const item = noteImages.value[index]
+  
+  if (item.isPdf) {
+    // PDF 文件预览
+    // #ifdef H5
+    window.open(item.url, '_blank')
+    // #endif
+    // #ifndef H5
+    uni.downloadFile({
+      url: item.url,
+      success: (res) => {
+        if (res.statusCode === 200) {
+          uni.openDocument({
+            filePath: res.tempFilePath,
+            fileType: 'pdf',
+            success: () => {
+              uni.showToast({ title: '打开成功', icon: 'success' })
+            }
+          })
+        }
+      },
+      fail: () => {
+        uni.showToast({ title: '打开失败', icon: 'none' })
+      }
+    })
+    // #endif
+  } else {
+    // 图片打开全屏预览 - 找到在imageList中的索引
+    const imageIndex = imageList.value.findIndex(img => img.url === item.url)
+    openFullscreenPreview(imageIndex >= 0 ? imageIndex : index)
+  }
+}
 
 // 打开全屏预览
 const openFullscreenPreview = (index: number) => {
@@ -526,6 +624,18 @@ onMounted(() => {
   }
 })
 
+// 每次显示页面时刷新数据（处理从编辑页返回的情况）
+onShow(() => {
+  if (noteId.value) {
+    // 清除之前的数据，强制重新加载
+    note.value = null
+    previewUrls.value = {}
+    convertStatus.value = {}
+    loadNoteDetail()
+    loadComments()
+  }
+})
+
 const loadNoteDetail = async () => {
   try {
     note.value = await noteApi.getById(noteId.value)
@@ -550,17 +660,46 @@ const loadPreviewUrls = async () => {
     }
     
     if (Array.isArray(attachments)) {
-      const urlPromises = attachments
+      // 先获取所有附件的转换状态
+      const statusPromises = attachments
         .filter((att: any) => att?.fileId)
         .map(async (att: any) => {
           try {
-            const previewUrl = await getFilePreviewUrl(att.fileId)
-            return { fileId: att.fileId, url: previewUrl }
+            const status = await getFileConvertStatus(att.fileId)
+            return { fileId: att.fileId, status: status.status, pdfFileId: status.pdfFileId }
           } catch (e) {
-            console.error('获取预览URL失败:', att.fileId, e)
-            return { fileId: att.fileId, url: att.fileUrl }
+            console.error('获取转换状态失败:', att.fileId, e)
+            return { fileId: att.fileId, status: 0, pdfFileId: null }
           }
         })
+      
+      const statusResults = await Promise.all(statusPromises)
+      statusResults.forEach((item) => {
+        convertStatus.value[Number(item.fileId)] = { 
+          status: item.status, 
+          pdfFileId: item.pdfFileId ? Number(item.pdfFileId) : null 
+        }
+      })
+
+      // 再获取预览URL（包括源文件和转换后的PDF）
+      const allFileIds = new Set<number>()
+      attachments.forEach((att: any) => {
+        if (att?.fileId) allFileIds.add(att.fileId)
+      })
+      // 添加PDF文件的fileId
+      statusResults.forEach((item) => {
+        if (item.pdfFileId) allFileIds.add(Number(item.pdfFileId))
+      })
+      
+      const urlPromises = Array.from(allFileIds).map(async (fileId) => {
+        try {
+          const previewUrl = await getFilePreviewUrl(fileId)
+          return { fileId, url: previewUrl }
+        } catch (e) {
+          console.error('获取预览URL失败:', fileId, e)
+          return { fileId, url: '' }
+        }
+      })
       
       const results = await Promise.all(urlPromises)
       results.forEach((item) => {
@@ -977,6 +1116,33 @@ const formatTime = (time: string) => {
 .media-swiper {
   width: 100%;
   height: 100%;
+}
+
+.pdf-preview {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+}
+
+.download-preview {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+}
+
+.pdf-label {
+  margin-top: 12px;
+  font-size: 16px;
+  color: #666;
+  font-weight: 500;
 }
 
 .media-image {

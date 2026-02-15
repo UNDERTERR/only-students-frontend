@@ -53,6 +53,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { useNoteStore } from '@/stores/note'
 import NavBar from '@/components/NavBar.vue'
 import TabBar from '@/components/TabBar.vue'
@@ -110,6 +111,23 @@ const scrollToTop = () => {
 // 生命周期
 onMounted(() => {
   noteStore.fetchNotes(true)
+
+  // 监听笔记更新事件
+  uni.$on('notes-updated', () => {
+    console.log('收到笔记更新事件，刷新列表')
+    noteStore.fetchNotes(true)
+  })
+})
+
+// 每次显示页面时检查是否需要刷新
+onShow(() => {
+  // 检查是否有刷新标记
+  const needRefresh = uni.getStorageSync('need_refresh_notes')
+  if (needRefresh) {
+    console.log('检测到刷新标记，刷新笔记列表')
+    noteStore.fetchNotes(true)
+    uni.removeStorageSync('need_refresh_notes')
+  }
 })
 </script>
 
