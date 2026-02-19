@@ -45,14 +45,40 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { notificationApi } from '@/api/message'
 
 const themeStore = useThemeStore()
 const searchKeyword = ref('')
-const unreadCount = ref(3) // 模拟未读消息数
+const unreadCount = ref(0)
+let refreshInterval: ReturnType<typeof setInterval> | null = null
 
 const isDark = computed(() => themeStore.isDark)
+
+// 获取未读消息数
+const fetchUnreadCount = async () => {
+  try {
+    const count = await notificationApi.getUnreadCount()
+    unreadCount.value = count || 0
+  } catch (error) {
+    console.error('获取未读消息数失败:', error)
+  }
+}
+
+onMounted(() => {
+  // 初始获取未读数
+  fetchUnreadCount()
+  
+  // 每30秒刷新一次
+  refreshInterval = setInterval(fetchUnreadCount, 30000)
+})
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+  }
+})
 
 const toggleTheme = () => {
   themeStore.toggleTheme()

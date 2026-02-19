@@ -145,14 +145,15 @@ export interface PageResult<T> {
 // 消息相关类型
 export interface Conversation {
   id: number
-  userId: number
+  userId?: number
   targetUserId: number
-  targetUserName: string
+  targetUserName?: string
+  targetNickname?: string
   targetUserAvatar?: string
-  lastMessage: string
-  lastMessageTime: string
+  lastMessage?: string
+  lastMessageTime?: string
   unreadCount: number
-  status: number
+  status?: number
 }
 
 export interface Message {

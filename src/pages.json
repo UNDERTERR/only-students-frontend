@@ -50,6 +50,13 @@
       }
     },
     {
+      "path": "pages/message/chat",
+      "style": {
+        "navigationBarTitleText": "聊天",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/user/index",
       "style": {
         "navigationBarTitleText": "我的",

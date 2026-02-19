@@ -69,6 +69,33 @@
       @close="handleModalCancel"
     />
 
+    <!-- 更多操作底部弹窗 -->
+    <view v-if="showActionSheet" class="action-sheet-mask" @click="closeActionSheet">
+      <view class="action-sheet-panel" @click.stop>
+        <view class="action-sheet-header">
+          <text class="action-sheet-title">更多操作</text>
+        </view>
+        <view class="action-sheet-list">
+          <view 
+            v-for="item in actionSheetItems" 
+            :key="item.value"
+            class="action-sheet-item"
+            @click="handleActionClick(item)"
+          >
+            <view class="action-sheet-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path :d="item.icon"/>
+              </svg>
+            </view>
+            <text class="action-sheet-label">{{ item.label }}</text>
+          </view>
+        </view>
+        <view class="action-sheet-cancel" @click="closeActionSheet">
+          <text>取消</text>
+        </view>
+      </view>
+    </view>
+
     <!-- 导航栏 -->
     <view class="detail-nav">
       <view class="back-btn" @click="goBack">
@@ -735,6 +762,13 @@ const showFullscreenPreview = ref(false)
 const currentPreviewIndex = ref(0)
 const currentSwiperIndex = ref(0)
 
+// 更多操作弹窗
+const showActionSheet = ref(false)
+const actionSheetItems = ref([
+  { label: '举报', value: 'report', icon: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01' },
+  { label: '分享', value: 'share', icon: 'M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13' }
+])
+
 // 只显示图片的数量（不含PDF）
 const imageCount = computed(() => {
   return noteImages.value.filter(img => !img.isPdf).length
@@ -1160,18 +1194,22 @@ const goToAuthor = (userId: number) => {
 }
 
 const showMoreActions = () => {
-  uni.showActionSheet({
-    itemList: ['举报', '分享'],
-    success: (res) => {
-      if (res.tapIndex === 0) {
-        uni.navigateTo({
-          url: `/pages/report/submit?targetType=1&targetId=${noteId.value}`
-        })
-      } else if (res.tapIndex === 1) {
-        shareNote()
-      }
-    }
-  })
+  showActionSheet.value = true
+}
+
+const closeActionSheet = () => {
+  showActionSheet.value = false
+}
+
+const handleActionClick = (item: any) => {
+  closeActionSheet()
+  if (item.value === 'report') {
+    uni.navigateTo({
+      url: `/pages/report/submit?targetType=1&targetId=${noteId.value}`
+    })
+  } else if (item.value === 'share') {
+    shareNote()
+  }
 }
 
 // 下载文件
@@ -1415,19 +1453,21 @@ const formatTime = (time: string) => {
   padding-bottom: 60px;
 }
 
-/* 导航栏 - 透明悬浮 */
+/* 导航栏 - 粘滞定位，项目配色 */
 .detail-nav {
-  position: fixed;
+  position: sticky;
   top: 0;
   left: 0;
   right: 0;
   height: 50px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.4), transparent);
+  background: var(--bg-card);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding: 0 16px;
   z-index: 100;
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: var(--shadow-soft);
 }
 
 .back-btn, .more-btn {
@@ -1436,22 +1476,26 @@ const formatTime = (time: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  background: rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+  background: var(--bg-secondary);
   border-radius: 50%;
-  backdrop-filter: blur(4px);
+  transition: background var(--transition-fast);
+}
+
+.back-btn:active, .more-btn:active {
+  background: var(--bg-hover);
 }
 
 .nav-title {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
-  color: white;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  color: var(--text-primary);
 }
 
 /* 内容区 */
 .detail-content {
   padding-top: 0;
+  background: var(--bg-primary);
 }
 
 /* 全屏限制内容遮罩 wrapper - 类似 X.com */
@@ -2200,5 +2244,97 @@ const formatTime = (time: string) => {
 .download-icon {
   color: var(--text-tertiary);
   flex-shrink: 0;
+}
+
+/* 底部操作弹窗 */
+.action-sheet-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.action-sheet-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border-radius: 20px 20px 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  animation: slideUp 0.3s ease;
+  z-index: 1001;
+}
+
+.action-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.action-sheet-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.action-sheet-list {
+  padding: 8px 0;
+}
+
+.action-sheet-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  gap: 12px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.action-sheet-item:active {
+  background: var(--bg-secondary);
+}
+
+.action-sheet-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border-radius: 50%;
+  color: var(--text-secondary);
+}
+
+.action-sheet-label {
+  flex: 1;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.action-sheet-cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 20px;
+  margin-top: 8px;
+  border-top: 6px solid var(--bg-secondary);
+  cursor: pointer;
+}
+
+.action-sheet-cancel text {
+  font-size: 16px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.action-sheet-cancel:active {
+  background: var(--bg-secondary);
 }
 </style>

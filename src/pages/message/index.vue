@@ -172,7 +172,7 @@ const goToChat = (conv: Conversation) => {
   }
   
   uni.navigateTo({
-    url: `/pages/message/chat?id=${conv.id}&name=${encodeURIComponent(conv.targetUserName)}&targetId=${conv.targetUserId}`
+    url: `/pages/message/chat?id=${conv.id}&name=${encodeURIComponent(conv.targetUserName || conv.targetNickname)}&targetId=${conv.targetUserId}&avatar=${encodeURIComponent(conv.targetUserAvatar || '')}`
   })
 }
 

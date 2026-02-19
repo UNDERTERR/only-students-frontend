@@ -300,8 +300,10 @@ const sendMessage = () => {
     return
   }
 
+  // 跳转到聊天页面，传递目标用户ID和名称
+  // chat页面会根据targetId加载或创建会话
   uni.navigateTo({
-    url: `/pages/message/chat?id=${creatorId.value}&name=${creator.value?.nickname || creator.value?.username}`
+    url: `/pages/message/chat?targetId=${creatorId.value}&name=${encodeURIComponent(creator.value?.nickname || creator.value?.username)}&avatar=${encodeURIComponent(creator.value?.avatar || '')}`
   })
 }
 
