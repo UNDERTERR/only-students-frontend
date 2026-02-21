@@ -57,6 +57,7 @@
           <view v-if="conv.unreadCount > 0" class="unread-badge">
             {{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}
           </view>
+          <view v-else class="unread-dot-small"></view>
         </view>
 
         <!-- 加载更多 -->
@@ -89,6 +90,10 @@ const goBack = () => {
   }
 }
 
+onMounted(() => {
+  fetchConversations()
+})
+
 const userStore = useUserStore()
 const conversations = ref<ConversationWithUser[]>([])
 const loading = ref(false)
@@ -114,7 +119,8 @@ const fetchConversations = async () => {
   
   loading.value = true
   try {
-    const data = await messageApi.getConversations()
+    const result = await messageApi.getConversations()
+    const data = result?.data || result || []
     if (data && data.length > 0) {
       conversations.value = data
       hasMore.value = false
@@ -134,7 +140,22 @@ const loadMore = () => {
   // 分页逻辑，如需要
 }
 
-const handleConversationClick = (conv: ConversationWithUser) => {
+const handleConversationClick = async (conv: ConversationWithUser) => {
+  console.log('点击私信，unreadCount:', conv.unreadCount, 'type:', typeof conv.unreadCount)
+  // 标记已读
+  if (conv.unreadCount > 0) {
+    try {
+      await messageApi.markConversationAsRead(conv.id)
+      conv.unreadCount = 0
+      // 刷新列表
+      fetchConversations()
+      // 通知首页刷新未读数
+      uni.$emit('refreshUnreadCount')
+    } catch (e) {
+      console.error('标记已读失败:', e)
+    }
+  }
+  
   // 跳转到聊天页面
   const name = encodeURIComponent(conv.targetNickname || conv.targetUserName || '用户')
   const avatar = encodeURIComponent(conv.targetUserAvatar || '')
@@ -226,22 +247,29 @@ const handleConversationClick = (conv: ConversationWithUser) => {
 }
 
 .conversation-items {
-  padding: 0 16px;
+  padding: 0;
 }
 
 .conversation-item {
   display: flex;
   align-items: center;
-  padding: 16px 0;
+  padding: 16px;
   border-bottom: 1px solid var(--border-light);
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-card);
 }
 
 .conversation-item:active {
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary) !important;
 }
 
 .conversation-item.unread {
-  background: var(--bg-card);
+  background: var(--bg-secondary);
+}
+
+.conversation-item.unread:active {
+  background: var(--bg-tertiary) !important;
 }
 
 .conv-avatar {
@@ -304,6 +332,13 @@ const handleConversationClick = (conv: ConversationWithUser) => {
   align-items: center;
   justify-content: center;
   padding: 0 6px;
+}
+
+.unread-dot-small {
+  width: 8px;
+  height: 8px;
+  background: #FF3B30;
+  border-radius: 50%;
 }
 
 .load-more {

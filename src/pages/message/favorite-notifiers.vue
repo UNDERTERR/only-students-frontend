@@ -64,7 +64,7 @@
           />
           
           <!-- 未读红点 -->
-          <view v-if="!fav.isRead" class="unread-dot"></view>
+          <view v-if="fav.isRead === 0" class="unread-dot"></view>
         </view>
 
         <!-- 加载更多 -->
@@ -101,7 +101,7 @@ interface FavoriteWithUser {
   id: number
   userId: number
   noteId: number
-  isRead: boolean
+  isRead: number
   createdAt: string
   username?: string
   nickname?: string
@@ -158,11 +158,16 @@ const loadMore = () => {
 }
 
 const handleFavoriteClick = async (fav: FavoriteWithUser) => {
+  console.log('点击收藏，isRead:', fav.isRead, 'type:', typeof fav.isRead)
   // 标记已读
-  if (!fav.isRead) {
+  if (fav.isRead === 0 || fav.isRead === false || !fav.isRead) {
     try {
       await favoriteApi.markFavoriteAsRead(fav.id)
-      fav.isRead = true
+      fav.isRead = 1
+      // 刷新列表
+      fetchFavorites()
+      // 通知首页刷新未读数
+      uni.$emit('refreshUnreadCount')
     } catch (error) {
       console.error('标记已读失败:', error)
     }
@@ -262,7 +267,7 @@ onMounted(() => {
 }
 
 .favorite-items {
-  padding: 0 16px;
+  padding: 0;
 }
 
 .favorite-item {
@@ -273,14 +278,15 @@ onMounted(() => {
   position: relative;
   width: 100%;
   box-sizing: border-box;
+  background: var(--bg-card);
 }
 
 .favorite-item:active {
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary) !important;
 }
 
-.favorite-item.unread {
-  background: var(--bg-card);
+.favorite-item.unread:active {
+  background: var(--bg-tertiary) !important;
 }
 
 .fav-avatar {

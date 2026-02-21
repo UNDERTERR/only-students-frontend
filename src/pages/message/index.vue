@@ -136,9 +136,34 @@ import type { Notification } from '@/types/api.types'
 
 const canBack = ref(false)
 
+// 未读计数
+const commentUnread = ref(0)
+const favoriteUnread = ref(0)
+const messageUnread = ref(0)
+const followerUnread = ref(0)
+
+// 系统消息列表
+const systemMessages = ref<any[]>([])
+const currentPage = ref(1)
+const pageSize = 20
+const hasMore = ref(true)
+const loading = ref(false)
+
+// 监听未读数刷新事件
+uni.$on('refreshUnreadCount', () => {
+  console.log('收到刷新未读数事件')
+  fetchUnreadCounts()
+})
+
+onUnmounted(() => {
+  uni.$off('refreshUnreadCount')
+})
+
 onShow(() => {
+  console.log('onShow called, fetching unread counts...')
   const pages = getCurrentPages()
   canBack.value = pages.length > 1
+  fetchUnreadCounts()
 })
 
 const goBack = () => {
@@ -228,36 +253,46 @@ const goToPage = (type: string) => {
 
 // 获取未读数
 const fetchUnreadCounts = async () => {
+  console.log('fetchUnreadCounts called')
   try {
     // 获取评论未读数
     try {
       const commentCount = await commentApi.getReceivedCount()
+      console.log('评论未读数:', commentCount)
       commentUnread.value = commentCount || 0
     } catch (e) {
+      console.error('获取评论未读数失败:', e)
       commentUnread.value = 0
     }
     
     // 获取我的笔记被收藏的未读数
     try {
       const favoriteCount = await favoriteApi.getMyNoteFavoriteUnreadCount()
+      console.log('收藏未读数:', favoriteCount)
       favoriteUnread.value = favoriteCount || 0
     } catch (e) {
+      console.error('获取收藏未读数失败:', e)
       favoriteUnread.value = 0
     }
     
     // 获取私信未读数（会话列表未读总数）
     try {
-      const conversations = await messageApi.getConversations()
+      const result = await messageApi.getConversations()
+      const conversations = result?.data || result || []
+      console.log('私信未读数:', conversations)
       messageUnread.value = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
     } catch (e) {
+      console.error('获取私信未读数失败:', e)
       messageUnread.value = 0
     }
     
     // 获取新增粉丝数
     try {
       const followerCount = await subscriptionApi.getNewFollowerCount()
+      console.log('粉丝未读数:', followerCount)
       followerUnread.value = followerCount || 0
     } catch (e) {
+      console.error('获取粉丝未读数失败:', e)
       followerUnread.value = 0
     }
   } catch (error) {
@@ -274,7 +309,8 @@ const fetchSystemMessages = async (refresh = false) => {
   
   loading.value = true
   try {
-    const data = await notificationApi.getList(currentPage.value, pageSize)
+    const result = await notificationApi.getList(currentPage.value, pageSize)
+    const data = result?.data || result || []
     if (data && data.length > 0) {
       systemMessages.value.push(...data)
       hasMore.value = data.length === pageSize

@@ -105,34 +105,64 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onLoad } from '@dcloudio/uni-app'
 import { messageApi } from '@/api/message'
 import type { Message } from '@/types/api.types'
 import { useUserStore } from '@/stores/user'
 
 const canBack = ref(false)
+const userStore = useUserStore()
+const currentUserId = ref<number>(userStore.userInfo?.id || 0)
+const currentUserAvatar = ref(userStore.userInfo?.avatar || '')
+
+const targetUserId = ref<number>(0)
+const targetUserName = ref('')
+const targetUserAvatar = ref('')
+
+const conversationId = ref<number>(0)
+const messages = ref<any[]>([])
+const inputMessage = ref('')
+const scrollTop = ref(0)
+const loading = ref(false)
+
+// WebSocket相关
+let ws: WebSocket | null = null
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let reconnectAttempts = 0
+const maxReconnectAttempts = 5
 
 onShow(() => {
   const pages = getCurrentPages()
   canBack.value = pages.length > 1
 })
 
+const options = ref<any>({})
+
+onLoad((opts: any) => {
+  options.value = opts
+})
+
 // 返回上一页
 const goBack = () => {
+  // 通知刷新未读数（从任意页面返回都刷新）
+  uni.$emit('refreshUnreadCount')
+  
   if (canBack.value) {
     uni.navigateBack()
   } else {
     uni.reLaunch({ url: '/pages/index/index' })
   }
 }
-  if (options.targetId) {
-    targetUserId.value = parseInt(options.targetId)
+
+onMounted(async () => {
+  if (options.value.targetId) {
+    targetUserId.value = parseInt(options.value.targetId)
   }
-  if (options.name) {
-    targetUserName.value = decodeURIComponent(options.name)
+  if (options.value.name) {
+    targetUserName.value = decodeURIComponent(options.value.name)
   }
-  if (options.avatar) {
-    targetUserAvatar.value = decodeURIComponent(options.avatar)
+  if (options.value.avatar) {
+    targetUserAvatar.value = decodeURIComponent(options.value.avatar)
   }
   
   // 如果有会话ID，加载历史消息

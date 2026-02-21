@@ -48,7 +48,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { notificationApi, messageApi, subscriptionApi } from '@/api/message'
-import { favoriteApi } from '@/api/note'
+import { favoriteApi, commentApi } from '@/api/note'
 
 const themeStore = useThemeStore()
 const searchKeyword = ref('')
@@ -83,9 +83,12 @@ const fetchUnreadCount = async () => {
     
     // 私信未读数
     try {
-      const conversations = await messageApi.getConversations()
-      console.log('私信未读数:', conversations)
-      total += conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
+      const result = await messageApi.getConversations()
+      const conversations = result?.data || result || []
+      console.log('私信未读数原始:', conversations)
+      const msgCount = (conversations || []).reduce((sum: number, c: any) => sum + (c.unreadCount || 0), 0)
+      console.log('私信未读数计算结果:', msgCount)
+      total += msgCount
     } catch (e) {
       console.error('获取私信未读数失败:', e)
     }
@@ -97,6 +100,15 @@ const fetchUnreadCount = async () => {
       total += followerCount || 0
     } catch (e) {
       console.error('获取粉丝未读数失败:', e)
+    }
+    
+    // 评论未读数
+    try {
+      const commentCount = await commentApi.getReceivedCount()
+      console.log('评论未读数:', commentCount)
+      total += commentCount || 0
+    } catch (e) {
+      console.error('获取评论未读数失败:', e)
     }
     
     console.log('总未读数:', total)
@@ -147,7 +159,7 @@ const handleSearch = () => {
 }
 
 const goToMessages = () => {
-  uni.redirectTo({
+  uni.navigateTo({
     url: '/pages/message/index'
   })
 }

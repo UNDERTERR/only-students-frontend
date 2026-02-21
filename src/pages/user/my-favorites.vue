@@ -87,9 +87,6 @@
           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
         </svg>
         <text class="current-folder">{{ currentFolderName }}</text>
-        <svg class="arrow-down" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
       </view>
       <view class="divider">|</view>
       <view class="new-folder-btn" @click="openNewFolderModal">
@@ -275,8 +272,11 @@ const loadFolders = async () => {
     console.log('loadFolders返回:', res)
     folders.value = res || []
     console.log('folders.value:', folders.value)
-    const allFolder = folders.value.find(f => f.id === null)
-    currentFolderId.value = allFolder?.id ?? null
+    // 只在首次加载时设置默认收藏夹
+    if (currentFolderId.value === null && folders.value.length > 0) {
+      const allFolder = folders.value.find(f => f.id === null)
+      currentFolderId.value = allFolder?.id ?? null
+    }
   } catch (error) {
     console.error('加载收藏夹失败:', error)
   }

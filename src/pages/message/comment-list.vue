@@ -52,7 +52,7 @@
           v-for="comment in comments"
           :key="comment.id"
           class="comment-item"
-          :class="{ unread: !comment.isRead && activeTab === 'received' }"
+          :class="{ unread: comment.isRead === 0 && activeTab === 'received' }"
           @click="handleCommentClick(comment)"
         >
           <!-- 头像 -->
@@ -97,7 +97,7 @@
           />
           
           <!-- 未读红点 -->
-          <view v-if="!comment.isRead && activeTab === 'received'" class="unread-dot"></view>
+          <view v-if="comment.isRead === 0 && activeTab === 'received'" class="unread-dot"></view>
         </view>
 
         <!-- 加载更多 -->
@@ -125,7 +125,7 @@ interface CommentWithUser {
   likeCount: number
   replyCount: number
   isLiked: boolean
-  isRead: boolean
+  isRead: number
   createdAt: string
   username?: string
   avatar?: string
@@ -186,6 +186,11 @@ const switchTab = (tab: 'received' | 'sent') => {
 const fetchComments = async (refresh = false) => {
   if (loading.value) return
   
+  if (refresh) {
+    currentPage.value = 1
+    comments.value = []
+  }
+  
   loading.value = true
   try {
     if (activeTab.value === 'received') {
@@ -221,12 +226,17 @@ const loadMore = () => {
 }
 
 const handleCommentClick = async (comment: CommentWithUser) => {
+  console.log('点击评论，isRead:', comment.isRead, 'type:', typeof comment.isRead)
   // 标记已读
-  if (!comment.isRead && activeTab.value === 'received') {
+  if ((comment.isRead === 0 || comment.isRead === false || !comment.isRead) && activeTab.value === 'received') {
     try {
       await commentApi.markAsRead(comment.id)
-      comment.isRead = true
+      comment.isRead = 1
       receivedUnread.value = Math.max(0, receivedUnread.value - 1)
+      // 刷新列表
+      fetchComments(true)
+      // 通知首页刷新未读数
+      uni.$emit('refreshUnreadCount')
     } catch (e) {
       console.error('标记已读失败:', e)
     }
@@ -408,16 +418,21 @@ onMounted(async () => {
   margin: 0;
   border-bottom: 1px solid var(--border-light);
   position: relative;
-  background: var(--bg-primary);
+  background: var(--bg-card);
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* 移除点击变暗效果，改用简单的反馈 */
 .comment-item:active {
-  opacity: 0.7;
+  background: var(--bg-tertiary) !important;
 }
 
 .comment-item.unread {
-  /* 未读状态不再改变背景色 */
+  background: var(--bg-secondary);
+}
+
+.comment-item.unread:active {
+  background: var(--bg-tertiary) !important;
 }
 
 .comment-avatar {
@@ -511,7 +526,7 @@ onMounted(async () => {
 .unread-dot {
   position: absolute;
   top: 18px;
-  right: 0;
+  right: 16px;
   width: 8px;
   height: 8px;
   background: #FF3B30;

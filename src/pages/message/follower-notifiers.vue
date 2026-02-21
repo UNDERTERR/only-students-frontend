@@ -58,7 +58,7 @@
           </view>
           
           <!-- 未读红点 -->
-          <view v-if="!follower.isRead" class="unread-dot"></view>
+          <view v-if="follower.isRead === 0" class="unread-dot"></view>
         </view>
 
         <!-- 加载更多 -->
@@ -139,11 +139,17 @@ const loadMore = () => {
   }
 }
 
-const handleFollowerClick = async (follower: Follower) => {
-  if (!follower.isRead || follower.isRead === 0) {
+const handleFollowerClick = async (follower: any) => {
+  console.log('点击粉丝，isRead:', follower.isRead, 'type:', typeof follower.isRead)
+  // 标记已读并刷新列表
+  if (follower.isRead === 0 || follower.isRead === false || !follower.isRead) {
     try {
       await subscriptionApi.markFollowerAsRead(follower.id)
       follower.isRead = 1
+      // 刷新列表
+      fetchFollowers()
+      // 通知首页刷新未读数
+      uni.$emit('refreshUnreadCount')
     } catch (error) {
       console.error('标记已读失败:', error)
     }
@@ -251,14 +257,15 @@ onMounted(() => {
   position: relative;
   width: 100%;
   box-sizing: border-box;
+  background: var(--bg-card);
 }
 
 .follower-item:active {
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary) !important;
 }
 
-.follower-item.unread {
-  background: var(--bg-card);
+.follower-item.unread:active {
+  background: var(--bg-tertiary) !important;
 }
 
 .follower-avatar {
