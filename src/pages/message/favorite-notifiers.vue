@@ -46,19 +46,19 @@
           <!-- 内容 -->
           <view class="fav-content">
             <view class="fav-header">
-              <text class="fav-username">{{ fav.user?.nickname || fav.user?.username || '用户' }}</text>
+              <text class="fav-username">{{ fav.nickname || fav.username || '用户' }}</text>
               <text class="fav-time">{{ formatTime(fav.createdAt) }}</text>
             </view>
             <view class="fav-action">
               <text class="action-text">收藏了我的笔记</text>
             </view>
-            <text class="fav-note-title">{{ fav.note?.title || '笔记' }}</text>
+            <text class="fav-note-title">{{ fav.title || '笔记' }}</text>
           </view>
           
           <!-- 笔记封面 -->
           <image 
-            v-if="fav.note?.coverUrl" 
-            :src="fav.note.coverUrl" 
+            v-if="fav.coverImage" 
+            :src="fav.coverImage" 
             class="note-cover" 
             mode="aspectFill"
           />
@@ -78,8 +78,24 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { favoriteApi } from '@/api/note'
 import { useUserStore } from '@/stores/user'
+
+const canBack = ref(false)
+
+onShow(() => {
+  const pages = getCurrentPages()
+  canBack.value = pages.length > 1
+})
+
+const goBack = () => {
+  if (canBack.value) {
+    uni.navigateBack()
+  } else {
+    uni.reLaunch({ url: '/pages/index/index' })
+  }
+}
 
 interface FavoriteWithUser {
   id: number
@@ -87,17 +103,11 @@ interface FavoriteWithUser {
   noteId: number
   isRead: boolean
   createdAt: string
-  user?: {
-    id: number
-    username: string
-    nickname?: string
-    avatar?: string
-  }
-  note?: {
-    id: number
-    title: string
-    coverUrl?: string
-  }
+  username?: string
+  nickname?: string
+  avatar?: string
+  title?: string
+  coverImage?: string
 }
 
 const userStore = useUserStore()
@@ -147,10 +157,15 @@ const loadMore = () => {
   }
 }
 
-const handleFavoriteClick = (fav: FavoriteWithUser) => {
+const handleFavoriteClick = async (fav: FavoriteWithUser) => {
   // 标记已读
   if (!fav.isRead) {
-    fav.isRead = true
+    try {
+      await favoriteApi.markFavoriteAsRead(fav.id)
+      fav.isRead = true
+    } catch (error) {
+      console.error('标记已读失败:', error)
+    }
   }
   
   // 跳转到笔记详情
@@ -159,10 +174,6 @@ const handleFavoriteClick = (fav: FavoriteWithUser) => {
       url: `/pages/note/detail?id=${fav.noteId}` 
     })
   }
-}
-
-const goBack = () => {
-  uni.navigateBack()
 }
 
 onMounted(() => {
@@ -257,9 +268,11 @@ onMounted(() => {
 .favorite-item {
   display: flex;
   align-items: center;
-  padding: 16px 0;
+  padding: 16px;
   border-bottom: 1px solid var(--border-light);
   position: relative;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .favorite-item:active {

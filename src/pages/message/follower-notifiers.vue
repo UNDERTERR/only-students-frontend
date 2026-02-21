@@ -1,5 +1,5 @@
 <template>
-  <view class="conversation-list-page">
+  <view class="follower-notifiers-page">
     <!-- 导航栏 -->
     <view class="page-nav">
       <view class="back-btn" @click="goBack">
@@ -7,56 +7,58 @@
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
       </view>
-      <text class="nav-title">私信</text>
+      <text class="nav-title">新增粉丝</text>
       <view class="nav-right"></view>
     </view>
 
-    <!-- 会话列表 -->
-    <scroll-view scroll-y class="conversation-list" @scrolltolower="loadMore">
+    <!-- 粉丝列表 -->
+    <scroll-view scroll-y class="follower-list" @scrolltolower="loadMore">
       <!-- 加载状态 -->
-      <view v-if="loading && conversations.length === 0" class="loading-state">
+      <view v-if="loading && followers.length === 0" class="loading-state">
         <view class="spinner"></view>
         <text>加载中...</text>
       </view>
 
       <!-- 空状态 -->
-      <view v-else-if="!loading && conversations.length === 0" class="empty-state">
+      <view v-else-if="!loading && followers.length === 0" class="empty-state">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-          <polyline points="22,6 12,13 2,6"/>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="8.5" cy="7" r="4"/>
+          <line x1="20" y1="8" x2="20" y2="14"/>
+          <line x1="23" y1="11" x2="17" y2="11"/>
         </svg>
-        <text class="empty-text">暂无私信</text>
+        <text class="empty-text">暂无新粉丝</text>
       </view>
 
-      <!-- 会话列表 -->
-      <view v-else class="conversation-items">
+      <!-- 粉丝列表 -->
+      <view v-else class="follower-items">
         <view
-          v-for="conv in conversations"
-          :key="conv.id"
-          class="conversation-item"
-          :class="{ unread: conv.unreadCount > 0 }"
-          @click="handleConversationClick(conv)"
+          v-for="follower in followers"
+          :key="follower.id"
+          class="follower-item"
+          :class="{ unread: !follower.isRead }"
+          @click="handleFollowerClick(follower)"
         >
           <!-- 头像 -->
           <image 
-            :src="conv.targetUserAvatar || '/static/default-avatar.svg'" 
-            class="conv-avatar" 
+            :src="follower.subscriberAvatar || '/static/default-avatar.svg'" 
+            class="follower-avatar" 
             mode="aspectFill"
           />
           
           <!-- 内容 -->
-          <view class="conv-content">
-            <view class="conv-header">
-              <text class="conv-username">{{ conv.targetNickname || conv.targetUserName || '用户' }}</text>
-              <text class="conv-time">{{ formatTime(conv.lastMessageTime) }}</text>
+          <view class="follower-content">
+            <view class="follower-header">
+              <text class="follower-name">{{ follower.subscriberNickname || follower.subscriberUsername || '用户' }}</text>
+              <text class="follower-time">{{ formatTime(follower.createdAt) }}</text>
             </view>
-            <text class="conv-preview">{{ conv.lastMessage || '暂无消息' }}</text>
+            <view class="follower-action">
+              <text class="action-text">关注了我</text>
+            </view>
           </view>
           
-          <!-- 未读数 -->
-          <view v-if="conv.unreadCount > 0" class="unread-badge">
-            {{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}
-          </view>
+          <!-- 未读红点 -->
+          <view v-if="!follower.isRead" class="unread-dot"></view>
         </view>
 
         <!-- 加载更多 -->
@@ -71,8 +73,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { messageApi } from '@/api/message'
-import { useUserStore } from '@/stores/user'
+import { subscriptionApi } from '@/api/message'
 
 const canBack = ref(false)
 
@@ -89,14 +90,13 @@ const goBack = () => {
   }
 }
 
-const userStore = useUserStore()
-const conversations = ref<ConversationWithUser[]>([])
+const followers = ref<Follower[]>([])
 const loading = ref(false)
 const hasMore = ref(true)
 const currentPage = ref(1)
 const pageSize = 20
 
-const formatTime = (timeStr?: string): string => {
+const formatTime = (timeStr: string): string => {
   if (!timeStr) return ''
   const date = new Date(timeStr)
   const now = new Date()
@@ -109,21 +109,23 @@ const formatTime = (timeStr?: string): string => {
   return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
 }
 
-const fetchConversations = async () => {
+const fetchFollowers = async () => {
   if (loading.value) return
   
   loading.value = true
   try {
-    const data = await messageApi.getConversations()
+    const data = await subscriptionApi.getMySubscribers()
     if (data && data.length > 0) {
-      conversations.value = data
-      hasMore.value = false
+      followers.value = data.map(f => ({
+        ...f,
+        isRead: f.isRead || 0
+      }))
+      hasMore.value = data.length === pageSize
     } else {
-      conversations.value = []
       hasMore.value = false
     }
   } catch (error) {
-    console.error('获取会话列表失败:', error)
+    console.error('获取粉丝记录失败:', error)
     uni.showToast({ title: '加载失败', icon: 'none' })
   } finally {
     loading.value = false
@@ -131,22 +133,34 @@ const fetchConversations = async () => {
 }
 
 const loadMore = () => {
-  // 分页逻辑，如需要
+  if (!loading.value && hasMore.value) {
+    currentPage.value++
+    fetchFollowers()
+  }
 }
 
-const handleConversationClick = (conv: ConversationWithUser) => {
-  // 跳转到聊天页面
-  const name = encodeURIComponent(conv.targetNickname || conv.targetUserName || '用户')
-  const avatar = encodeURIComponent(conv.targetUserAvatar || '')
+const handleFollowerClick = async (follower: Follower) => {
+  if (!follower.isRead || follower.isRead === 0) {
+    try {
+      await subscriptionApi.markFollowerAsRead(follower.id)
+      follower.isRead = 1
+    } catch (error) {
+      console.error('标记已读失败:', error)
+    }
+  }
   
-  uni.navigateTo({
-    url: `/pages/message/chat?id=${conv.id}&targetId=${conv.targetUserId}&name=${name}&avatar=${avatar}`
+  uni.navigateTo({ 
+    url: `/pages/user/profile?id=${follower.subscriberId}` 
   })
 }
+
+onMounted(() => {
+  fetchFollowers()
+})
 </script>
 
 <style scoped>
-.conversation-list-page {
+.follower-notifiers-page {
   min-height: 100vh;
   background: var(--bg-primary);
   padding-top: 50px;
@@ -188,7 +202,7 @@ const handleConversationClick = (conv: ConversationWithUser) => {
   width: 36px;
 }
 
-.conversation-list {
+.follower-list {
   height: calc(100vh - 50px);
 }
 
@@ -225,85 +239,80 @@ const handleConversationClick = (conv: ConversationWithUser) => {
   font-size: 14px;
 }
 
-.conversation-items {
-  padding: 0 16px;
+.follower-items {
+  padding: 0;
 }
 
-.conversation-item {
+.follower-item {
   display: flex;
   align-items: center;
-  padding: 16px 0;
+  padding: 16px;
   border-bottom: 1px solid var(--border-light);
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.conversation-item:active {
+.follower-item:active {
   background: var(--bg-secondary);
 }
 
-.conversation-item.unread {
+.follower-item.unread {
   background: var(--bg-card);
 }
 
-.conv-avatar {
-  width: 50px;
-  height: 50px;
+.follower-avatar {
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   flex-shrink: 0;
   margin-right: 12px;
 }
 
-.conv-content {
+.follower-content {
   flex: 1;
   min-width: 0;
 }
 
-.conv-header {
+.follower-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
-.conv-username {
-  font-size: 15px;
+.follower-name {
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.conv-time {
+.follower-time {
   font-size: 11px;
   color: var(--text-tertiary);
 }
 
-.conv-preview {
-  font-size: 13px;
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.follower-action {
+  margin-bottom: 2px;
 }
 
-.conversation-item.unread .conv-username {
+.action-text {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.follower-item.unread .follower-name {
   font-weight: 700;
 }
 
-.conversation-item.unread .conv-preview {
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.unread-badge {
-  min-width: 20px;
-  height: 20px;
+.unread-dot {
+  position: absolute;
+  top: 18px;
+  right: 16px;
+  width: 8px;
+  height: 8px;
   background: #FF3B30;
-  color: white;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 6px;
+  border-radius: 50%;
 }
 
 .load-more {

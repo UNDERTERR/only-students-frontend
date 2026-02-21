@@ -169,6 +169,13 @@
       }
     },
     {
+      "path": "pages/message/follower-notifiers",
+      "style": {
+        "navigationBarTitleText": "新增粉丝",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/note/comment-detail",
       "style": {
         "navigationBarTitleText": "评论详情",

@@ -129,40 +129,27 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { notificationApi, messageApi } from '@/api/message'
+import { onShow } from '@dcloudio/uni-app'
+import { notificationApi, messageApi, subscriptionApi } from '@/api/message'
 import { favoriteApi, commentApi } from '@/api/note'
 import type { Notification } from '@/types/api.types'
 
-// 各种未读数
-const commentUnread = ref(0)
-const favoriteUnread = ref(0)
-const messageUnread = ref(0)
-const followerUnread = ref(0)
+const canBack = ref(false)
 
-// 系统消息
-const systemMessages = ref<Notification[]>([])
-const loading = ref(false)
-const hasMore = ref(true)
-const currentPage = ref(1)
-const pageSize = 20
+onShow(() => {
+  const pages = getCurrentPages()
+  canBack.value = pages.length > 1
+})
 
-// SSE
-let eventSource: EventSource | null = null
-
-// 连接SSE获取实时未读数
-const connectSSE = () => {
-  const token = uni.getStorageSync('token')
-  const userId = uni.getStorageSync('userId')
-  if (!token || !userId) return
-  
-  // 使用本地通知服务端口
-  const url = `http://localhost:8009/notification/sse/subscribe?userId=${userId}&token=${token}`
-  eventSource = new EventSource(url)
-  
-  eventSource.onopen = () => {
-    console.log('SSE连接成功')
+const goBack = () => {
+  if (canBack.value) {
+    uni.navigateBack()
+  } else {
+    uni.reLaunch({ url: '/pages/index/index' })
   }
-  
+}
+
+const connectSSE = () => {
   eventSource.addEventListener('unread-count', (event) => {
     try {
       const data = JSON.parse(event.data)
@@ -234,7 +221,7 @@ const goToPage = (type: string) => {
       uni.navigateTo({ url: '/pages/message/conversation-list' })
       break
     case 'follower':
-      uni.navigateTo({ url: '/pages/user/my-subscribers' })
+      uni.navigateTo({ url: '/pages/message/follower-notifiers' })
       break
   }
 }
@@ -266,8 +253,13 @@ const fetchUnreadCounts = async () => {
       messageUnread.value = 0
     }
     
-    // 获取新增粉丝数（需要从订阅服务获取）
-    followerUnread.value = 0 // TODO: 需要订阅服务API支持
+    // 获取新增粉丝数
+    try {
+      const followerCount = await subscriptionApi.getNewFollowerCount()
+      followerUnread.value = followerCount || 0
+    } catch (e) {
+      followerUnread.value = 0
+    }
   } catch (error) {
     console.error('获取未读数失败:', error)
   }
@@ -321,10 +313,6 @@ const handleNoticeClick = (notice: Notification) => {
         break
     }
   }
-}
-
-const goBack = () => {
-  uni.navigateBack()
 }
 
 // 初始化

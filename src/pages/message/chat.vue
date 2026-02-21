@@ -105,44 +105,26 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { messageApi } from '@/api/message'
 import type { Message } from '@/types/api.types'
 import { useUserStore } from '@/stores/user'
 
-const userStore = useUserStore()
-const currentUserId = ref(userStore.userInfo?.id || 0)
-const currentUserAvatar = ref(userStore.userInfo?.avatar || '')
+const canBack = ref(false)
 
-// 页面参数
-const conversationId = ref(0)
-const targetUserId = ref(0)
-const targetUserName = ref('')
-const targetUserAvatar = ref('')
-
-// 消息列表
-const messages = ref<Message[]>([])
-const inputMessage = ref('')
-const loading = ref(false)
-const scrollTop = ref(0)
-const page = ref(1)
-const pageSize = 20
-const hasMore = ref(true)
-
-// WebSocket
-let ws: WebSocket | null = null
-let reconnectAttempts = 0
-const maxReconnectAttempts = 5
-let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-
-// 初始化页面
-onMounted(async () => {
+onShow(() => {
   const pages = getCurrentPages()
-  const currentPage = pages[pages.length - 1]
-  const options = currentPage.options
-  
-  if (options.id) {
-    conversationId.value = parseInt(options.id)
+  canBack.value = pages.length > 1
+})
+
+// 返回上一页
+const goBack = () => {
+  if (canBack.value) {
+    uni.navigateBack()
+  } else {
+    uni.reLaunch({ url: '/pages/index/index' })
   }
+}
   if (options.targetId) {
     targetUserId.value = parseInt(options.targetId)
   }
@@ -337,11 +319,6 @@ const showTimeDivider = (index: number): boolean => {
   const prev = new Date(messages.value[index - 1].createdAt)
   // 间隔5分钟显示时间
   return current.getTime() - prev.getTime() > 5 * 60 * 1000
-}
-
-// 返回上一页
-const goBack = () => {
-  uni.navigateBack()
 }
 </script>
 

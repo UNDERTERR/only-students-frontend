@@ -116,6 +116,16 @@ export const subscriptionApi = {
   // 更新订阅配置（创作者使用）
   updateConfig: (data: { price: number; period?: number; description?: string }) => {
     return put<SubscriptionConfig>('/subscription/config', data)
+  },
+
+  // 获取新增粉丝未读数
+  getNewFollowerCount: () => {
+    return get<number>('/subscription/new-follower-count')
+  },
+
+  // 标记粉丝已读
+  markFollowerAsRead: (subscriptionId: number) => {
+    return post<void>(`/subscription/follower/${subscriptionId}/read`)
   }
 }
 

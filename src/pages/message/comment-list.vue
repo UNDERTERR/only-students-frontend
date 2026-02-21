@@ -111,29 +111,44 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { commentApi } from '@/api/note'
 import { useUserStore } from '@/stores/user'
 
 interface CommentWithUser {
   id: number
-  userId: number
   noteId: number
-  parentId?: number
+  userId: number
+  parentId: number
+  rootId: number
   content: string
   likeCount: number
+  replyCount: number
   isLiked: boolean
   isRead: boolean
   createdAt: string
-  user?: {
-    id: number
-    username: string
-    nickname?: string
-    avatar?: string
-  }
+  username?: string
+  avatar?: string
   note?: {
     id: number
     title: string
     coverUrl?: string
+  }
+  replies?: CommentWithUser[]
+}
+
+const canBack = ref(false)
+
+onShow(() => {
+  const pages = getCurrentPages()
+  canBack.value = pages.length > 1
+})
+
+const goBack = () => {
+  if (canBack.value) {
+    uni.navigateBack()
+  } else {
+    uni.reLaunch({ url: '/pages/index/index' })
   }
 }
 
@@ -239,10 +254,6 @@ const toggleLike = async (comment: CommentWithUser) => {
   } catch (error) {
     console.error('操作失败:', error)
   }
-}
-
-const goBack = () => {
-  uni.navigateBack()
 }
 
 onMounted(async () => {

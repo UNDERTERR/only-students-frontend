@@ -47,7 +47,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useThemeStore } from '@/stores/theme'
-import { notificationApi, messageApi } from '@/api/message'
+import { notificationApi, messageApi, subscriptionApi } from '@/api/message'
 import { favoriteApi } from '@/api/note'
 
 const themeStore = useThemeStore()
@@ -90,8 +90,14 @@ const fetchUnreadCount = async () => {
       console.error('获取私信未读数失败:', e)
     }
     
-    // 粉丝未读数（暂为0）
-    // TODO: 需要订阅服务API
+    // 粉丝未读数
+    try {
+      const followerCount = await subscriptionApi.getNewFollowerCount()
+      console.log('粉丝未读数:', followerCount)
+      total += followerCount || 0
+    } catch (e) {
+      console.error('获取粉丝未读数失败:', e)
+    }
     
     console.log('总未读数:', total)
     unreadCount.value = total
@@ -141,7 +147,7 @@ const handleSearch = () => {
 }
 
 const goToMessages = () => {
-  uni.navigateTo({
+  uni.redirectTo({
     url: '/pages/message/index'
   })
 }
