@@ -35,13 +35,12 @@
         </view>
 
         <view class="form-item">
-          <text class="label">用户名</text>
+          <text class="label">昵称</text>
           <input
             type="text"
-            v-model="form.username"
-            placeholder="请输入用户名"
+            v-model="form.nickname"
+            placeholder="请输入昵称"
             class="input"
-            disabled
           />
         </view>
 
@@ -126,7 +125,6 @@ const userStore = useUserStore()
 const form = ref({
   avatar: '',
   nickname: '',
-  username: '',
   email: '',
   phone: '',
   bio: '',
@@ -152,7 +150,6 @@ onMounted(() => {
     form.value = {
       avatar: userInfo.avatar || '',
       nickname: userInfo.nickname || '',
-      username: userInfo.username || '',
       email: userInfo.email || '',
       phone: userInfo.phone || '',
       bio: userInfo.bio || '',

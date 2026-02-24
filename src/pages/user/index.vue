@@ -232,7 +232,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
-import { walletApi, subscriptionApi, noteApi } from '@/api/index'
+import { walletApi, subscriptionApi, noteApi, userApi } from '@/api'
 import type { WalletInfo } from '@/types/api.types'
 import TabBar from '@/components/TabBar.vue'
 import CustomModal from '@/components/CustomModal.vue'
@@ -308,16 +308,26 @@ onMounted(() => {
 const loadUserData = async () => {
   try {
     // 并行获取数据
-    const [walletRes, notesRes, subscribersRes, subscriptionsRes] = await Promise.all([
+    const [userRes, walletRes, notesRes, subscribersRes, subscriptionsRes] = await Promise.all([
+      userApi.getCurrentUser().catch(() => null),
       walletApi.getWallet().catch(() => null),
       noteApi.getMyNotes().catch(() => []),
       subscriptionApi.getMySubscribers().catch(() => []),
       subscriptionApi.getMySubscriptions().catch(() => [])
     ])
 
+    // 更新用户信息
+    if (userRes) {
+      userStore.setUserInfo(userRes)
+      console.log('用户数据返回:', JSON.stringify(userRes))
+      console.log('followerCount值:', userRes.followerCount)
+      stats.value.subscriberCount = userRes.followerCount ?? 0
+    } else {
+      console.log('用户数据为空')
+    }
+    
     wallet.value = walletRes
     stats.value.noteCount = notesRes?.length || 0
-    stats.value.subscriberCount = subscribersRes?.length || 0
     stats.value.subscriptionCount = subscriptionsRes?.length || 0
 
     // 计算总点赞数

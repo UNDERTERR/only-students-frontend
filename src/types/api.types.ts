@@ -9,7 +9,6 @@ export interface ApiResponse<T> {
 // 用户相关类型
 export interface UserInfo {
   id: number
-  username: string
   email?: string
   phone?: string
   nickname: string
@@ -19,14 +18,19 @@ export interface UserInfo {
   schoolId?: number
   schoolName?: string
   isCreator: number
+  followerCount?: number
   lastLoginTime?: string
   createdAt?: string
 }
 
+export type LoginType = 'PASSWORD' | 'SMS_CODE'
+
 // 登录请求
 export interface LoginRequest {
-  username: string
-  password: string
+  account: string
+  loginType: LoginType
+  password?: string
+  smsCode?: string
   deviceId?: string
   deviceType?: number
   deviceName?: string
@@ -40,15 +44,25 @@ export interface LoginResponse {
   expireTime: number
 }
 
+export type AccountType = 'EMAIL' | 'PHONE'
+
 // 注册请求
 export interface RegisterRequest {
-  username: string
+  accountType: AccountType
+  account: string
+  smsCode: string
   password: string
-  email?: string
-  phone?: string
-  nickname?: string
+  nickname: string
   educationLevel?: number
   schoolId?: number
+}
+
+export type SendCodeType = 'REGISTER' | 'LOGIN' | 'RESET_PASSWORD'
+
+// 发送验证码请求
+export interface SendCodeRequest {
+  account: string
+  type: SendCodeType
 }
 
 // 更新用户信息请求
@@ -91,8 +105,6 @@ export interface Note {
   schoolName?: string
   subject?: string
   tags?: string[]
-  authorName?: string
-  authorUsername?: string
   authorNickname?: string
   authorAvatar?: string
   publishTime?: string

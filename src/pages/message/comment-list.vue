@@ -65,7 +65,7 @@
           <!-- 内容 -->
           <view class="comment-content">
             <view class="comment-header">
-              <text class="comment-username">{{ comment.username || '用户' }}</text>
+              <text class="comment-nickname">{{ comment.nickname || '用户' }}</text>
               <text class="comment-time">{{ formatTime(comment.createdAt) }}</text>
             </view>
             
@@ -127,7 +127,7 @@ interface CommentWithUser {
   isLiked: boolean
   isRead: number
   createdAt: string
-  username?: string
+  nickname?: string
   avatar?: string
   note?: {
     id: number

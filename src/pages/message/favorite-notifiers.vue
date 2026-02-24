@@ -46,7 +46,7 @@
           <!-- 内容 -->
           <view class="fav-content">
             <view class="fav-header">
-              <text class="fav-username">{{ fav.nickname || fav.username || '用户' }}</text>
+              <text class="fav-nickname">{{ fav.nickname || '用户' }}</text>
               <text class="fav-time">{{ formatTime(fav.createdAt) }}</text>
             </view>
             <view class="fav-action">
@@ -103,7 +103,6 @@ interface FavoriteWithUser {
   noteId: number
   isRead: number
   createdAt: string
-  username?: string
   nickname?: string
   avatar?: string
   title?: string

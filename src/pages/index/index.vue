@@ -52,12 +52,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
-import { useNoteStore } from '@/stores/note'
 import NavBar from '@/components/NavBar.vue'
-import TabBar from '@/components/TabBar.vue'
 import Waterfall from '@/components/Waterfall.vue'
+import TabBar from '@/components/TabBar.vue'
+
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useNoteStore } from '@/stores/note'
 import type { Note } from '@/types/api.types'
 
 const noteStore = useNoteStore()
@@ -86,7 +86,7 @@ const loadMore = () => {
   }
 }
 
-// 下拉刷新
+// 下拉刷新（真正需要强制刷新时才用）
 const onRefresh = async () => {
   refreshing.value = true
   await noteStore.fetchNotes(true)
@@ -100,35 +100,32 @@ const handleNoteClick = (note: Note) => {
   })
 }
 
-// 返回顶部
+// 🔥 增量更新收藏数（乐观更新核心）
+const handleFavoriteUpdate = (payload: { id: number; delta: number }) => {
+  noteStore.updateFavoriteCount(payload.id, payload.delta)
+}
+
+// 生命周期
+onMounted(() => {
+  // 只在第一次加载时请求
+  if (!notes.value.length) {
+    noteStore.fetchNotes(true)
+  }
+
+  // 监听收藏更新事件（来自详情页）
+  uni.$on('note-favorite-updated', handleFavoriteUpdate)
+})
+
+// 页面销毁时取消监听（防止重复绑定）
+onBeforeUnmount(() => {
+  uni.$off('note-favorite-updated', handleFavoriteUpdate)
+})
 const scrollToTop = () => {
   uni.pageScrollTo({
     scrollTop: 0,
     duration: 300
   })
 }
-
-// 生命周期
-onMounted(() => {
-  noteStore.fetchNotes(true)
-
-  // 监听笔记更新事件
-  uni.$on('notes-updated', () => {
-    console.log('收到笔记更新事件，刷新列表')
-    noteStore.fetchNotes(true)
-  })
-})
-
-// 每次显示页面时检查是否需要刷新
-onShow(() => {
-  // 检查是否有刷新标记
-  const needRefresh = uni.getStorageSync('need_refresh_notes')
-  if (needRefresh) {
-    console.log('检测到刷新标记，刷新笔记列表')
-    noteStore.fetchNotes(true)
-    uni.removeStorageSync('need_refresh_notes')
-  }
-})
 </script>
 
 <style>

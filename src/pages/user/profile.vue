@@ -223,6 +223,7 @@ const loadCreatorData = async () => {
 
     // 计算统计数据
     stats.value.noteCount = notesRes.length
+    stats.value.subscriberCount = userRes.followerCount || 0
     const totalLikes = notesRes.reduce((sum: number, note: any) => sum + (note.likeCount || 0), 0)
     stats.value.likeCount = totalLikes
 
@@ -260,7 +261,8 @@ const toggleSubscribe = async () => {
       try {
         await del(`/subscription/${creatorId.value}`)
         isSubscribed.value = false
-        stats.value.subscriberCount--
+        stats.value.subscriberCount = Math.max(0, stats.value.subscriberCount - 1)
+        userStore.updateUserInfo()
         uni.showToast({ title: '已取消订阅', icon: 'success' })
       } catch (error) {
         uni.showToast({ title: '操作失败', icon: 'none' })
@@ -287,6 +289,7 @@ const subscribe = async () => {
       await post('/subscription', { creatorId: creatorId.value })
       isSubscribed.value = true
       stats.value.subscriberCount++
+      userStore.updateUserInfo()
       uni.showToast({ title: '订阅成功', icon: 'success' })
     } catch (error) {
       uni.showToast({ title: '订阅失败', icon: 'none' })

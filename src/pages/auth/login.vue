@@ -9,17 +9,36 @@
 
       <!-- 登录表单 -->
       <view class="login-form">
+        <!-- 登录方式切换 -->
+        <view class="login-type-tabs">
+          <view 
+            class="tab-item" 
+            :class="{ active: loginType === 'PASSWORD' }"
+            @click="loginType = 'PASSWORD'"
+          >
+            密码登录
+          </view>
+          <view 
+            class="tab-item" 
+            :class="{ active: loginType === 'SMS_CODE' }"
+            @click="loginType = 'SMS_CODE'"
+          >
+            验证码登录
+          </view>
+        </view>
+
+        <!-- 账号输入 -->
         <view class="form-item username-item">
           <input
             type="text"
-            v-model="form.username"
-            placeholder="用户名/邮箱/手机号"
+            v-model="form.account"
+            :placeholder="loginType === 'PASSWORD' ? '邮箱/手机号' : '手机号'"
             class="form-input"
             @focus="showHistory = historyAccounts.length > 0"
           />
           <!-- 历史账号下拉按钮 -->
           <view
-            v-if="historyAccounts.length > 0"
+            v-if="historyAccounts.length > 0 && loginType === 'PASSWORD'"
             class="history-toggle"
             @click="showHistory = !showHistory"
           >
@@ -29,14 +48,14 @@
           </view>
 
           <!-- 历史账号下拉列表 -->
-          <view v-if="showHistory && historyAccounts.length > 0" class="history-dropdown">
+          <view v-if="showHistory && historyAccounts.length > 0 && loginType === 'PASSWORD'" class="history-dropdown">
             <view
               v-for="(account, index) in historyAccounts"
               :key="index"
               class="history-item"
               @click="selectHistoryAccount(account)"
             >
-              <text class="history-username">{{ account.username }}</text>
+              <text class="history-account">{{ account.account }}</text>
               <view class="history-delete" @click="removeHistoryAccount(index, $event)">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="18" y1="6" x2="6" y2="18"/>
@@ -47,13 +66,32 @@
           </view>
         </view>
 
-        <view class="form-item">
+        <!-- 密码登录 -->
+        <view class="form-item" v-if="loginType === 'PASSWORD'">
           <input
             type="password"
             v-model="form.password"
             placeholder="密码"
             class="form-input"
           />
+        </view>
+
+        <!-- 验证码登录 -->
+        <view class="form-item sms-code-item" v-else>
+          <input
+            type="number"
+            v-model="form.smsCode"
+            placeholder="验证码"
+            class="form-input"
+            maxlength="6"
+          />
+          <button 
+            class="send-code-btn" 
+            :disabled="countdown > 0"
+            @click="sendSmsCode"
+          >
+            {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
+          </button>
         </view>
 
         <view class="form-options">
@@ -107,23 +145,37 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { userApi } from '@/api/user'
+import type { LoginType } from '@/types/api.types'
 
 const userStore = useUserStore()
 
+const loginType = ref<LoginType>('PASSWORD')
+
 const form = ref({
-  username: '',
-  password: ''
+  account: '',
+  password: '',
+  smsCode: ''
 })
 
 const loading = ref(false)
 const rememberMe = ref(false)
+const countdown = ref(0)
 
 const isFormValid = computed(() => {
-  return form.value.username.trim() && form.value.password.trim()
+  if (!form.value) return false
+  const account = form.value.account || ''
+  const password = form.value.password || ''
+  const smsCode = form.value.smsCode || ''
+  if (loginType.value === 'PASSWORD') {
+    return account.trim() && password.trim()
+  } else {
+    return account.trim() && smsCode.trim().length === 6
+  }
 })
 
 // 历史账号列表（最多保存5个）
-const historyAccounts = ref<Array<{username: string, password: string}>>([])
+const historyAccounts = ref<Array<{account: string, password: string}>>([])
 const showHistory = ref(false)
 
 const handleLogin = async () => {
@@ -132,8 +184,10 @@ const handleLogin = async () => {
   loading.value = true
 
   const result = await userStore.login({
-    username: form.value.username,
-    password: form.value.password
+    account: form.value.account,
+    loginType: loginType.value,
+    password: loginType.value === 'PASSWORD' ? form.value.password : undefined,
+    smsCode: loginType.value === 'SMS_CODE' ? form.value.smsCode : undefined
   })
 
   loading.value = false
@@ -142,8 +196,8 @@ const handleLogin = async () => {
     uni.showToast({ title: '登录成功', icon: 'success' })
 
     // 记住密码功能 - 支持多账号
-    if (rememberMe.value) {
-      saveAccountToHistory(form.value.username, form.value.password)
+    if (rememberMe.value && loginType.value === 'PASSWORD') {
+      saveAccountToHistory(form.value.account, form.value.password)
     }
 
     // 跳转到首页（使用 redirectTo，因为没有配置 tabBar）
@@ -155,15 +209,40 @@ const handleLogin = async () => {
   }
 }
 
+const sendSmsCode = async () => {
+  if (!form.value.account.trim()) {
+    uni.showToast({ title: '请输入手机号', icon: 'none' })
+    return
+  }
+
+  try {
+    await userApi.sendCode({
+      account: form.value.account,
+      type: 'LOGIN'
+    })
+    uni.showToast({ title: '验证码已发送', icon: 'success' })
+    
+    countdown.value = 60
+    const timer = setInterval(() => {
+      countdown.value--
+      if (countdown.value <= 0) {
+        clearInterval(timer)
+      }
+    }, 1000)
+  } catch (error: any) {
+    uni.showToast({ title: error.message || '发送失败', icon: 'none' })
+  }
+}
+
 // 保存账号到历史记录
-const saveAccountToHistory = (username: string, password: string) => {
+const saveAccountToHistory = (account: string, password: string) => {
   let accounts = uni.getStorageSync('loginHistoryAccounts') || []
 
   // 查找是否已存在该账号
-  const existingIndex = accounts.findIndex((acc: any) => acc.username === username)
+  const existingIndex = accounts.findIndex((acc: any) => acc.account === account)
 
   const accountInfo = {
-    username: username,
+    account: account,
     password: btoa(password), // Base64加密
     loginTime: Date.now()
   }
@@ -184,8 +263,8 @@ const saveAccountToHistory = (username: string, password: string) => {
 }
 
 // 选择历史账号
-const selectHistoryAccount = (account: {username: string, password: string}) => {
-  form.value.username = account.username
+const selectHistoryAccount = (account: {account: string, password: string}) => {
+  form.value.account = account.account
   form.value.password = atob(account.password)
   rememberMe.value = true
   showHistory.value = false
@@ -217,14 +296,14 @@ const wechatLogin = () => {
 const checkRememberedUser = () => {
   const accounts = uni.getStorageSync('loginHistoryAccounts') || []
   historyAccounts.value = accounts.map((acc: any) => ({
-    username: acc.username,
+    account: acc.account,
     password: acc.password
   }))
 
   // 自动填充最近登录的账号
   if (accounts.length > 0) {
     const lastAccount = accounts[0]
-    form.value.username = lastAccount.username
+    form.value.account = lastAccount.account
     form.value.password = atob(lastAccount.password)
     rememberMe.value = true
   }
@@ -277,26 +356,80 @@ checkRememberedUser()
   margin-bottom: 16px;
 }
 
-.form-input {
-  width: 100%;
+.login-type-tabs {
+  display: flex;
+  margin-bottom: 20px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.login-type-tabs .tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.login-type-tabs .tab-item.active {
+  background: var(--bg-card);
+  color: var(--accent-warm);
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.sms-code-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sms-code-item .form-input {
+  flex: 1;
+}
+
+.send-code-btn {
+  width: 100px;
   height: 48px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-light);
   border-radius: 12px;
+  font-size: 13px;
+  color: var(--accent-warm);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.send-code-btn[disabled] {
+  color: var(--text-tertiary);
+}
+
+.form-input {
+  width: 100%;
+  height: 48px;
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
   padding: 0 16px;
   font-size: 15px;
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
   transition: all 0.3s;
 }
 
 .form-input:focus {
   outline: none;
   border-color: var(--accent-warm);
-  background: var(--bg-card);
+  background: var(--bg-card) !important;
 }
 
 .form-input::placeholder {
-  color: var(--text-tertiary);
+  color: var(--text-tertiary) !important;
 }
 
 .form-options {
@@ -468,7 +601,7 @@ checkRememberedUser()
   background: var(--bg-secondary);
 }
 
-.history-username {
+.history-account {
   font-size: 14px;
   color: var(--text-primary);
 }

@@ -46,6 +46,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { useThemeStore } from '@/stores/theme'
 import { notificationApi, messageApi, subscriptionApi } from '@/api/message'
 import { favoriteApi, commentApi } from '@/api/note'
@@ -59,14 +60,12 @@ const isDark = computed(() => themeStore.isDark)
 
 // 获取未读消息数（所有模块的总和）
 const fetchUnreadCount = async () => {
-  console.log('fetchUnreadCount called')
   try {
     let total = 0
     
     // 通知未读数
     try {
       const notificationCount = await notificationApi.getUnreadCount()
-      console.log('通知未读数:', notificationCount)
       total += notificationCount || 0
     } catch (e) {
       console.error('获取通知未读数失败:', e)
@@ -75,7 +74,6 @@ const fetchUnreadCount = async () => {
     // 收藏未读数
     try {
       const favoriteCount = await favoriteApi.getMyNoteFavoriteUnreadCount()
-      console.log('收藏未读数:', favoriteCount)
       total += favoriteCount || 0
     } catch (e) {
       console.error('获取收藏未读数失败:', e)
@@ -85,9 +83,7 @@ const fetchUnreadCount = async () => {
     try {
       const result = await messageApi.getConversations()
       const conversations = result?.data || result || []
-      console.log('私信未读数原始:', conversations)
       const msgCount = (conversations || []).reduce((sum: number, c: any) => sum + (c.unreadCount || 0), 0)
-      console.log('私信未读数计算结果:', msgCount)
       total += msgCount
     } catch (e) {
       console.error('获取私信未读数失败:', e)
@@ -96,7 +92,6 @@ const fetchUnreadCount = async () => {
     // 粉丝未读数
     try {
       const followerCount = await subscriptionApi.getNewFollowerCount()
-      console.log('粉丝未读数:', followerCount)
       total += followerCount || 0
     } catch (e) {
       console.error('获取粉丝未读数失败:', e)
@@ -105,25 +100,20 @@ const fetchUnreadCount = async () => {
     // 评论未读数
     try {
       const commentCount = await commentApi.getReceivedCount()
-      console.log('评论未读数:', commentCount)
       total += commentCount || 0
     } catch (e) {
       console.error('获取评论未读数失败:', e)
     }
     
-    console.log('总未读数:', total)
     unreadCount.value = total
-    console.log('unreadCount.value set to:', unreadCount.value)
   } catch (error) {
     console.error('获取未读消息数失败:', error)
   }
 }
 
 onMounted(() => {
-  // 检查是否登录
   const token = uni.getStorageSync('token')
   const userId = uni.getStorageSync('userId')
-  console.log('NavBar mounted, token:', !!token, 'userId:', userId)
   
   if (token && userId) {
     // 初始获取未读数
@@ -131,6 +121,15 @@ onMounted(() => {
     
     // 每30秒刷新一次
     refreshInterval = setInterval(fetchUnreadCount, 30000)
+  }
+})
+
+// 每次页面显示时刷新未读数
+onShow(() => {
+  const token = uni.getStorageSync('token')
+  const userId = uni.getStorageSync('userId')
+  if (token && userId) {
+    fetchUnreadCount()
   }
 })
 

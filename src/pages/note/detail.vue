@@ -1010,6 +1010,8 @@ const submitRating = async (score: number) => {
     note.value!.ratingCount = (note.value!.ratingCount || 0) + (myRating.value === score ? 1 : 0)
     closeRatingPopup()
     uni.showToast({ title: `已评分 ${score} 星`, icon: 'success' })
+    // 通知首页刷新笔记数据
+    uni.$emit('notes-updated')
   } catch (error) {
     uni.showToast({ title: '评分失败', icon: 'none' })
   }
@@ -1025,15 +1027,17 @@ const toggleFavorite = async () => {
     if (isFavorited.value) {
       await favoriteApi.remove(noteId.value)
       isFavorited.value = false
-      note.value!.favoriteCount--
+      note.value!.favoriteCount = Math.max(0, (note.value!.favoriteCount || 0) - 1)
       uni.showToast({ title: '已取消收藏', icon: 'none' })
     } else {
       await favoriteApi.add(noteId.value)
       isFavorited.value = true
-      note.value!.favoriteCount++
+      note.value!.favoriteCount = (note.value!.favoriteCount || 0) + 1
       // 显示收藏成功弹窗，右侧显示"修改文件夹"
       showFavoriteSuccessModal()
     }
+    // 通知首页刷新笔记数据
+    uni.$emit('notes-updated')
   } catch (error) {
     uni.showToast({ title: '操作失败', icon: 'none' })
   }
@@ -1749,14 +1753,14 @@ const formatTime = (time: string) => {
 }
 
 .paywall-content {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-card);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 24px 32px;
   text-align: center;
   border: 1px solid var(--border-light);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-medium);
 }
 
 .paywall-icon {

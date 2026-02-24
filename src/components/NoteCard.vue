@@ -37,7 +37,6 @@
     <!-- 内容区 -->
     <view class="note-content">
       <text class="note-title">{{ note.title }}</text>
-      <text v-if="note.summary" class="note-summary">{{ note.summary }}</text>
 
       <!-- 底部信息 -->
       <view class="note-meta">
@@ -48,7 +47,7 @@
             class="author-avatar"
             mode="aspectFill"
           />
-          <text class="author-name">{{ note.authorName }}</text>
+          <text class="author-name">{{ note.authorNickname }}</text>
         </view>
 
         <view class="note-stats">
@@ -73,8 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Note } from '@/stores/note'
-
+import type { Note} from '@/types/api.types'
 interface Props {
   note: Note
 }
@@ -86,12 +84,13 @@ defineEmits<{
 
 // 格式化数字（超过1000显示为1k）
 const formatNumber = (num: number): string => {
-  if (num >= 10000) {
-    return (num / 10000).toFixed(1) + 'w'
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'k'
+  const safeNum = Math.max(0, num || 0)
+  if (safeNum >= 10000) {
+    return (safeNum / 10000).toFixed(1) + 'w'
+  } else if (safeNum >= 1000) {
+    return (safeNum / 1000).toFixed(1) + 'k'
   }
-  return num.toString()
+  return safeNum.toString()
 }
 </script>
 

@@ -25,6 +25,12 @@ export const useNoteStore = defineStore('note', () => {
     return notes.value.filter(note => note.categoryId === selectedCategory.value)
   })
 
+  const updateFavoriteCount = (id: number, delta: number) =>{
+    const note = notes.value.find(n => n.id === id)
+    if (note) {
+      note.favoriteCount = Math.max(0, (note.favoriteCount || 0) + delta)
+    }
+  }
   // 获取笔记列表（支持搜索和筛选）
   const fetchNotes = async (refresh = false, params: Partial<SearchParams> = {}) => {
     if (loading.value) return
@@ -59,6 +65,7 @@ export const useNoteStore = defineStore('note', () => {
       } else {
         // 否则获取最新笔记
         response = await noteApi.getLatest(pageSize.value)
+        console.log('首页获取笔记数据:', response)
         if (refresh) {
           notes.value = response
         } else {
@@ -145,6 +152,7 @@ export const useNoteStore = defineStore('note', () => {
     currentPage,
     selectedCategory,
     searchKeyword,
+    updateFavoriteCount,
     fetchNotes,
     selectCategory,
     searchNotes,

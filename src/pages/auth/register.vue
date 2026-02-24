@@ -23,28 +23,50 @@
 
       <!-- 注册表单 -->
       <view class="register-form">
+        <!-- 账号输入 -->
         <view class="form-item">
           <input
             type="text"
-            v-model="form.username"
-            placeholder="用户名 (3-50位)"
+            v-model="form.account"
+            placeholder="手机号/邮箱"
             class="form-input"
-            @blur="validateUsername"
+            :maxlength="form.account.includes('@') ? 50 : 11"
           />
-          <text v-if="errors.username" class="error-text">{{ errors.username }}</text>
         </view>
+        <text v-if="errors.account" class="error-text">{{ errors.account }}</text>
 
+        <!-- 验证码输入+发送按钮 -->
+        <view class="form-item sms-code-item">
+          <input
+            type="number"
+            v-model="form.smsCode"
+            placeholder="请输入6位验证码"
+            class="form-input"
+            maxlength="6"
+          />
+          <button 
+            class="send-code-btn" 
+            :disabled="countdown > 0"
+            @click="sendSmsCode"
+          >
+            {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
+          </button>
+        </view>
+        <text v-if="errors.smsCode" class="error-text">{{ errors.smsCode }}</text>
+
+        <!-- 密码 -->
         <view class="form-item">
           <input
             type="password"
             v-model="form.password"
-            placeholder="密码 (6-32位)"
+            placeholder="密码 (8-20位)"
             class="form-input"
             @blur="validatePassword"
           />
           <text v-if="errors.password" class="error-text">{{ errors.password }}</text>
         </view>
 
+        <!-- 确认密码 -->
         <view class="form-item">
           <input
             type="password"
@@ -56,33 +78,19 @@
           <text v-if="errors.confirmPassword" class="error-text">{{ errors.confirmPassword }}</text>
         </view>
 
+        <!-- 昵称 -->
         <view class="form-item">
           <input
             type="text"
             v-model="form.nickname"
-            placeholder="昵称"
+            placeholder="昵称 (必填)"
             class="form-input"
+            @blur="validateNickname"
           />
+          <text v-if="errors.nickname" class="error-text">{{ errors.nickname }}</text>
         </view>
 
-        <view class="form-item">
-          <input
-            type="text"
-            v-model="form.email"
-            placeholder="邮箱（选填）"
-            class="form-input"
-          />
-        </view>
-
-        <view class="form-item">
-          <input
-            type="number"
-            v-model="form.phone"
-            placeholder="手机号（选填）"
-            class="form-input"
-          />
-        </view>
-
+        <!-- 学段选择 -->
         <view class="form-item">
           <picker mode="selector" :range="educationLevels" :value="educationLevelIndex" @change="onEducationChange">
             <view class="picker-input">
@@ -124,6 +132,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { userApi } from '@/api/user'
 import CustomModal from '@/components/CustomModal.vue'
 
 const userStore = useUserStore()
@@ -178,23 +187,25 @@ const handleModalCancel = () => {
 }
 
 const form = ref({
-  username: '',
+  account: '',
+  smsCode: '',
   password: '',
   confirmPassword: '',
   nickname: '',
-  email: '',
-  phone: '',
   educationLevel: null as number | null
 })
 
 const errors = ref({
-  username: '',
+  account: '',
+  smsCode: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  nickname: ''
 })
 
 const loading = ref(false)
 const agreed = ref(false)
+const countdown = ref(0)
 
 const educationLevels = ['小学', '初中', '高中', '本科', '硕士', '博士']
 const educationLevelIndex = computed(() => {
@@ -206,31 +217,66 @@ const educationLevelText = computed(() => {
 })
 
 const isFormValid = computed(() => {
-  return form.value.username &&
+  return form.value.account &&
+         form.value.smsCode &&
          form.value.password &&
          form.value.confirmPassword &&
+         form.value.nickname &&
          form.value.password === form.value.confirmPassword &&
          agreed.value &&
-         !errors.value.username &&
+         !errors.value.account &&
+         !errors.value.smsCode &&
          !errors.value.password &&
-         !errors.value.confirmPassword
+         !errors.value.confirmPassword &&
+         !errors.value.nickname
 })
 
-const validateUsername = () => {
-  if (!form.value.username) {
-    errors.value.username = '用户名不能为空'
-  } else if (form.value.username.length < 3 || form.value.username.length > 50) {
-    errors.value.username = '用户名长度必须在3-50之间'
+const sendSmsCode = async () => {
+  if (!form.value.account.trim()) {
+    errors.value.account = '请输入手机号或邮箱'
+    return
+  }
+
+  const isEmail = form.value.account.includes('@')
+  
+  if (isEmail) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.account)) {
+      errors.value.account = '邮箱格式不正确'
+      return
+    }
   } else {
-    errors.value.username = ''
+    if (!/^1[3-9]\d{9}$/.test(form.value.account)) {
+      errors.value.account = '手机号格式不正确'
+      return
+    }
+  }
+
+  errors.value.account = ''
+
+  try {
+    await userApi.sendCode({
+      account: form.value.account,
+      type: 'REGISTER'
+    })
+    uni.showToast({ title: '验证码已发送', icon: 'success' })
+    
+    countdown.value = 60
+    const timer = setInterval(() => {
+      countdown.value--
+      if (countdown.value <= 0) {
+        clearInterval(timer)
+      }
+    }, 1000)
+  } catch (error: any) {
+    uni.showToast({ title: error.message || '发送失败', icon: 'none' })
   }
 }
 
 const validatePassword = () => {
   if (!form.value.password) {
     errors.value.password = '密码不能为空'
-  } else if (form.value.password.length < 6 || form.value.password.length > 32) {
-    errors.value.password = '密码长度必须在6-32之间'
+  } else if (form.value.password.length < 8 || form.value.password.length > 20) {
+    errors.value.password = '密码长度必须在8-20之间'
   } else {
     errors.value.password = ''
   }
@@ -246,21 +292,45 @@ const validateConfirmPassword = () => {
   }
 }
 
+const validateNickname = () => {
+  if (!form.value.nickname) {
+    errors.value.nickname = '昵称不能为空'
+  } else if (form.value.nickname.length < 2 || form.value.nickname.length > 20) {
+    errors.value.nickname = '昵称长度必须在2-20之间'
+  } else {
+    errors.value.nickname = ''
+  }
+}
+
 const onEducationChange = (e: any) => {
   form.value.educationLevel = e.detail.value + 1
 }
 
 const handleRegister = async () => {
+  // 验证
+  if (!form.value.account.trim()) {
+    errors.value.account = '请输入手机号或邮箱'
+  }
+  if (!form.value.smsCode) {
+    errors.value.smsCode = '请输入验证码'
+  }
+  validatePassword()
+  validateConfirmPassword()
+  validateNickname()
+
   if (!isFormValid.value) return
 
   loading.value = true
 
+  const isEmail = form.value.account.includes('@')
+  const accountType = isEmail ? 'EMAIL' : 'PHONE'
+
   const result = await userStore.register({
-    username: form.value.username,
+    accountType,
+    account: form.value.account,
+    smsCode: form.value.smsCode,
     password: form.value.password,
-    nickname: form.value.nickname || form.value.username,
-    email: form.value.email || undefined,
-    phone: form.value.phone || undefined,
+    nickname: form.value.nickname,
     educationLevel: form.value.educationLevel || undefined
   })
 
@@ -276,17 +346,20 @@ const handleRegister = async () => {
     // 自动登录
     setTimeout(async () => {
       const loginResult = await userStore.login({
-        username: form.value.username,
-        password: form.value.password
+        account: form.value.account,
+        loginType: isEmail ? 'PASSWORD' : 'SMS_CODE',
+        smsCode: !isEmail ? form.value.smsCode : undefined,
+        password: isEmail ? form.value.password : undefined
       })
 
       if (loginResult.success) {
-        uni.switchTab({ url: '/pages/index/index' })
+        uni.redirectTo({ url: '/pages/index/index' })
       } else {
         uni.redirectTo({ url: '/pages/auth/login' })
       }
     }, 1500)
   } else {
+    console.log('注册失败 result:', result)
     uni.showToast({
       title: result.message || '注册失败',
       icon: 'none',
@@ -357,26 +430,54 @@ const showPrivacy = async () => {
   margin-bottom: 16px;
 }
 
-.form-input {
-  width: 100%;
+.sms-code-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sms-code-item .form-input {
+  flex: 1;
+}
+
+.send-code-btn {
+  width: 100px;
   height: 48px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-light);
   border-radius: 12px;
+  font-size: 13px;
+  color: var(--accent-warm);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.send-code-btn[disabled] {
+  color: var(--text-tertiary);
+}
+
+.form-input {
+  width: 100%;
+  height: 48px;
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
   padding: 0 16px;
   font-size: 15px;
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
   transition: all 0.3s;
 }
 
 .form-input:focus {
   outline: none;
   border-color: var(--accent-warm);
-  background: var(--bg-card);
+  background: var(--bg-card) !important;
 }
 
 .form-input::placeholder {
-  color: var(--text-tertiary);
+  color: var(--text-tertiary) !important;
 }
 
 .picker-input {

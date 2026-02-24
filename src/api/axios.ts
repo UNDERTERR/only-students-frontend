@@ -45,10 +45,6 @@ instance.interceptors.response.use(
 
     // 业务逻辑错误
     if (data.code !== 200) {
-      uni.showToast({
-        title: data.message || '请求失败',
-        icon: 'none'
-      })
       return Promise.reject(data)
     }
 
@@ -59,35 +55,37 @@ instance.interceptors.response.use(
 
     console.error('请求错误:', error)
 
+    let errorMessage = '请求失败'
+
     if (error.response) {
-      // 服务器返回错误状态码
       const { status, data } = error.response
+      console.log('Error response full:', JSON.stringify(error.response))
+      console.log('Error data:', data)
+      console.log('Error data keys:', Object.keys(data))
+      
+      if (data) {
+        errorMessage = data.message || data.msg || data.error || `请求失败(${status})`
+      } else {
+        errorMessage = `请求失败(${status})`
+      }
 
       if (status === 401) {
-        // token过期，清除登录状态
         uni.removeStorageSync('token')
         uni.removeStorageSync('userId')
-        uni.showToast({ title: '登录已过期，请重新登录', icon: 'none' })
+        errorMessage = '登录已过期，请重新登录'
 
-        // 跳转到登录页
         setTimeout(() => {
           uni.navigateTo({ url: '/pages/auth/login' })
         }, 1500)
-      } else {
-        uni.showToast({
-          title: data?.message || `请求失败(${status})`,
-          icon: 'none'
-        })
       }
     } else if (error.request) {
-      // 请求已发出但没有收到响应
-      uni.showToast({ title: '网络错误，请检查网络连接', icon: 'none' })
+      errorMessage = '网络错误，请检查网络连接'
     } else {
-      // 请求配置出错
-      uni.showToast({ title: '请求配置错误', icon: 'none' })
+      errorMessage = '请求配置错误'
     }
 
-    return Promise.reject(error)
+    // 返回错误信息给调用方，而不是直接显示 toast
+    return Promise.reject(error.response?.data || { message: errorMessage })
   }
 )
 

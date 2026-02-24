@@ -325,7 +325,7 @@ const formatTime = (time: string) => {
 <style scoped>
 .detail-page {
   min-height: 100vh;
-  background: #FDFCF8;
+  background: var(--bg-primary);
 }
 
 .navbar {
@@ -334,8 +334,8 @@ const formatTime = (time: string) => {
   justify-content: space-between;
   height: 44px;
   padding: 0 16px;
-  background: #FDFCF8;
-  border-bottom: 1px solid #f0f0f0;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
   position: fixed;
   top: 0;
   left: 0;
@@ -359,6 +359,7 @@ const formatTime = (time: string) => {
 .nav-title {
   font-size: 17px;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .nav-placeholder {
@@ -374,7 +375,7 @@ const formatTime = (time: string) => {
 .root-comment {
   display: flex;
   padding: 16px;
-  background: #fff;
+  background: var(--bg-card);
 }
 
 .comment-avatar {
@@ -405,22 +406,22 @@ const formatTime = (time: string) => {
 .comment-nickname {
   font-size: 15px;
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .comment-username {
   font-size: 12px;
-  color: #999;
+  color: var(--text-tertiary);
 }
 
 .comment-time {
   font-size: 12px;
-  color: #999;
+  color: var(--text-tertiary);
 }
 
 .comment-text {
   font-size: 15px;
-  color: #333;
+  color: var(--text-primary);
   line-height: 1.5;
   margin-bottom: 8px;
 }
@@ -435,7 +436,7 @@ const formatTime = (time: string) => {
   align-items: center;
   gap: 4px;
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .comment-action svg {
@@ -449,25 +450,25 @@ const formatTime = (time: string) => {
 
 .replies-header {
   padding: 12px 16px;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .replies-count {
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .reply-item {
   display: flex;
   padding: 12px 16px;
-  background: #fff;
-  border-bottom: 1px solid #f5f5f5;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
   cursor: pointer;
 }
 
 .reply-item:active {
-  background: #f9f9f9;
+  background: var(--bg-hover);
 }
 
 .reply-avatar {
@@ -485,7 +486,7 @@ const formatTime = (time: string) => {
 .empty-replies {
   padding: 40px;
   text-align: center;
-  color: #999;
+  color: var(--text-tertiary);
   font-size: 14px;
 }
 
@@ -495,15 +496,15 @@ const formatTime = (time: string) => {
   justify-content: center;
   gap: 8px;
   padding: 16px;
-  color: #999;
+  color: var(--text-tertiary);
   font-size: 13px;
 }
 
 .loading-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #ddd;
-  border-top-color: #666;
+  border: 2px solid var(--border-medium);
+  border-top-color: var(--text-secondary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -518,8 +519,8 @@ const formatTime = (time: string) => {
   left: 0;
   right: 0;
   height: 50px;
-  background: #fff;
-  border-top: 1px solid #f0f0f0;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-light);
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -529,7 +530,7 @@ const formatTime = (time: string) => {
 .action-input {
   flex: 1;
   height: 36px;
-  background: #f5f5f5;
+  background: var(--bg-secondary);
   border-radius: 18px;
   display: flex;
   align-items: center;
@@ -538,7 +539,7 @@ const formatTime = (time: string) => {
 
 .placeholder {
   font-size: 14px;
-  color: #999;
+  color: var(--text-tertiary);
 }
 
 .comment-modal {
@@ -564,7 +565,7 @@ const formatTime = (time: string) => {
   bottom: 0;
   left: 0;
   right: 0;
-  background: #fff;
+  background: var(--bg-card);
   padding: 16px;
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
@@ -573,10 +574,11 @@ const formatTime = (time: string) => {
   width: 100%;
   height: 80px;
   font-size: 15px;
-  border: 1px solid #eee;
+  border: 1px solid var(--border-light);
   border-radius: 8px;
   padding: 12px;
-  background: #f9f9f9;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .input-actions {
@@ -588,7 +590,7 @@ const formatTime = (time: string) => {
 
 .char-count {
   font-size: 12px;
-  color: #999;
+  color: var(--text-tertiary);
 }
 
 .send-btn {

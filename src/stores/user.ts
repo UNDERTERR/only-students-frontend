@@ -69,9 +69,16 @@ export const useUserStore = defineStore('user', () => {
       const user = await userApi.register(registerData)
       return { success: true, data: user }
     } catch (error: any) {
+      console.error('注册错误:', error)
+      // error 可能是 {code, message} 对象
+      let message = '注册失败'
+      if (error) {
+        // 优先使用 error.message，如果没有就用 error.msg 或 error.data?.message
+        message = error.message || error.msg || error.data?.message || '注册失败'
+      }
       return {
         success: false,
-        message: error.message || '注册失败'
+        message: message
       }
     }
   }
@@ -98,6 +105,12 @@ export const useUserStore = defineStore('user', () => {
     } catch (error) {
       console.error('获取用户信息失败:', error)
     }
+  }
+  
+  // 设置用户信息
+  const setUserInfo = (user: UserInfo) => {
+    userInfo.value = user
+    uni.setStorageSync('userInfo', user)
   }
 
   // 获取设备类型
@@ -127,6 +140,7 @@ export const useUserStore = defineStore('user', () => {
     login,
     register,
     logout,
-    updateUserInfo
+    updateUserInfo,
+    setUserInfo
   }
 })

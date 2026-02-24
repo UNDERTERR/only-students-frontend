@@ -655,7 +655,7 @@ const handleSave = async () => {
       price: (form.value.visibility === 2 || form.value.visibility === 3) ? (parseFloat(form.value.price) || 0) : 0,
       tags: form.value.tags,
       attachments: JSON.stringify(form.value.attachments),
-      authorUsername: userStore.userInfo?.username,
+      authorNickname: userStore.userInfo?.nickname,
       authorAvatar: userStore.userInfo?.avatar,
     }
 

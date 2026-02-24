@@ -4,11 +4,17 @@ import type {
   LoginResponse,
   RegisterRequest,
   UpdateUserRequest,
-  UserInfo
+  UserInfo,
+  SendCodeRequest
 } from '@/types/api.types'
 
 // 用户认证相关API
 export const userApi = {
+  // 发送验证码
+  sendCode: (data: SendCodeRequest) => {
+    return post<void>('/sms/send', data)
+  },
+
   // 用户注册
   register: (data: RegisterRequest) => {
     return post<UserInfo>('/user/register', data)
