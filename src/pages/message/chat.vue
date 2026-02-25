@@ -124,6 +124,9 @@ const messages = ref<any[]>([])
 const inputMessage = ref('')
 const scrollTop = ref(0)
 const loading = ref(false)
+const hasMore = ref(true)
+const page = ref(1)
+const pageSize = 20
 
 // WebSocket相关
 let ws: WebSocket | null = null
@@ -134,6 +137,14 @@ const maxReconnectAttempts = 5
 onShow(() => {
   const pages = getCurrentPages()
   canBack.value = pages.length > 1
+  
+  // 每次显示页面时刷新消息
+  if (conversationId.value && messages.value.length === 0) {
+    page.value = 1
+    messages.value = []
+    hasMore.value = true
+    loadMessages()
+  }
 })
 
 const options = ref<any>({})
@@ -163,6 +174,9 @@ onMounted(async () => {
   }
   if (options.value.avatar) {
     targetUserAvatar.value = decodeURIComponent(options.value.avatar)
+  }
+  if (options.value.id) {
+    conversationId.value = parseInt(options.value.id)
   }
   
   // 如果有会话ID，加载历史消息

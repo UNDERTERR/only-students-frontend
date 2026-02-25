@@ -1,6 +1,6 @@
 <template>
   <view class="message-page">
-    <!-- 导航栏 -->
+      <!-- 导航栏 -->
     <view class="page-nav">
       <view class="back-btn" @click="goBack">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -88,6 +88,14 @@
           :class="{ unread: !notice.isRead }"
           @click="handleNoticeClick(notice)"
         >
+          <!-- 删除按钮 -->
+          <view v-if="deleteMode" class="delete-checkbox" @click.stop="deleteNotice(notice)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4d4f" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </view>
+          
           <view class="system-icon" :class="getNoticeTypeClass(notice.type)">
             <svg v-if="notice.type === 1" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
@@ -115,6 +123,12 @@
             </view>
             <text class="system-desc">{{ notice.content }}</text>
           </view>
+          <view class="item-delete-btn" @click.stop="deleteNotice(notice)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </view>
           <view v-if="!notice.isRead" class="unread-dot"></view>
         </view>
         
@@ -130,11 +144,12 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { notificationApi, messageApi, subscriptionApi } from '@/api/message'
+import { notificationApi, messageApi, subscriptionApi, commentNotificationApi, favoriteNotificationApi, messageNotificationApi, followerNotificationApi } from '@/api/message'
 import { favoriteApi, commentApi } from '@/api/note'
 import type { Notification } from '@/types/api.types'
 
 const canBack = ref(false)
+let eventSource: EventSource | null = null
 
 // 未读计数
 const commentUnread = ref(0)
@@ -148,6 +163,19 @@ const currentPage = ref(1)
 const pageSize = 20
 const hasMore = ref(true)
 const loading = ref(false)
+
+const deleteNotice = async (notice: any) => {
+  try {
+    await notificationApi.deleteNotification(notice.id)
+    const index = systemMessages.value.findIndex(n => n.id === notice.id)
+    if (index !== -1) {
+      systemMessages.value.splice(index, 1)
+    }
+    uni.showToast({ title: '删除成功', icon: 'success' })
+  } catch (error) {
+    uni.showToast({ title: '删除失败', icon: 'none' })
+  }
+}
 
 // 监听未读数刷新事件
 uni.$on('refreshUnreadCount', () => {
@@ -175,6 +203,11 @@ const goBack = () => {
 }
 
 const connectSSE = () => {
+  const token = uni.getStorageSync('token')
+  const userId = uni.getStorageSync('userId')
+  const url = `http://localhost:8080/api/notification/sse/subscribe?userId=${userId}&token=${token}`
+  eventSource = new EventSource(url)
+  
   eventSource.addEventListener('unread-count', (event) => {
     try {
       const data = JSON.parse(event.data)
@@ -255,44 +288,43 @@ const goToPage = (type: string) => {
 const fetchUnreadCounts = async () => {
   console.log('fetchUnreadCounts called')
   try {
-    // 获取评论未读数
+    // 获取评论通知未读数
     try {
-      const commentCount = await commentApi.getReceivedCount()
-      console.log('评论未读数:', commentCount)
+      const commentCount = await commentNotificationApi.getUnreadCount()
+      console.log('评论通知未读数:', commentCount)
       commentUnread.value = commentCount || 0
     } catch (e) {
-      console.error('获取评论未读数失败:', e)
+      console.error('获取评论通知未读数失败:', e)
       commentUnread.value = 0
     }
     
-    // 获取我的笔记被收藏的未读数
+    // 获取收藏通知未读数
     try {
-      const favoriteCount = await favoriteApi.getMyNoteFavoriteUnreadCount()
-      console.log('收藏未读数:', favoriteCount)
+      const favoriteCount = await favoriteNotificationApi.getUnreadCount()
+      console.log('收藏通知未读数:', favoriteCount)
       favoriteUnread.value = favoriteCount || 0
     } catch (e) {
-      console.error('获取收藏未读数失败:', e)
+      console.error('获取收藏通知未读数失败:', e)
       favoriteUnread.value = 0
     }
     
-    // 获取私信未读数（会话列表未读总数）
+    // 获取私信通知未读数
     try {
-      const result = await messageApi.getConversations()
-      const conversations = result?.data || result || []
-      console.log('私信未读数:', conversations)
-      messageUnread.value = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
+      const msgCount = await messageNotificationApi.getUnreadCount()
+      console.log('私信通知未读数:', msgCount)
+      messageUnread.value = msgCount || 0
     } catch (e) {
-      console.error('获取私信未读数失败:', e)
+      console.error('获取私信通知未读数失败:', e)
       messageUnread.value = 0
     }
     
-    // 获取新增粉丝数
+    // 获取粉丝通知未读数
     try {
-      const followerCount = await subscriptionApi.getNewFollowerCount()
-      console.log('粉丝未读数:', followerCount)
+      const followerCount = await followerNotificationApi.getUnreadCount()
+      console.log('粉丝通知未读数:', followerCount)
       followerUnread.value = followerCount || 0
     } catch (e) {
-      console.error('获取粉丝未读数失败:', e)
+      console.error('获取粉丝通知未读数失败:', e)
       followerUnread.value = 0
     }
   } catch (error) {
@@ -364,6 +396,7 @@ onUnmounted(() => {
     eventSource.close()
     eventSource = null
   }
+  uni.$off('refreshUnreadCount')
 })
 </script>
 
@@ -632,11 +665,24 @@ onUnmounted(() => {
 .unread-dot {
   position: absolute;
   top: 18px;
-  right: 16px;
+  right: 8px;
   width: 8px;
   height: 8px;
   background: #FF3B30;
   border-radius: 50%;
+}
+
+.item-delete-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  z-index: 20;
 }
 
 .load-more {
@@ -644,5 +690,23 @@ onUnmounted(() => {
   padding: 16px;
   color: var(--text-tertiary);
   font-size: 13px;
+}
+
+.delete-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.delete-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  flex-shrink: 0;
+  margin-right: 8px;
 }
 </style>

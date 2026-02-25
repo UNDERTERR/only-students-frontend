@@ -76,6 +76,118 @@ export const notificationApi = {
   }
 }
 
+// 新版通知API - 评论通知
+export const commentNotificationApi = {
+  // 获取评论通知列表
+  getList: (page: number = 1, size: number = 20) => {
+    return get<any>(`/notification/comment/list`, { page, size })
+  },
+
+  // 获取未读数量
+  getUnreadCount: () => {
+    return get<number>('/notification/comment/unread-count')
+  },
+
+  // 标记已读
+  markAsRead: (notificationId: number) => {
+    return post<void>(`/notification/comment/read/${notificationId}`)
+  },
+
+  // 全部已读
+  markAllAsRead: () => {
+    return post<void>('/notification/comment/read-all')
+  },
+
+  // 删除通知
+  deleteNotification: (notificationId: number) => {
+    return del<void>(`/notification/comment/${notificationId}`)
+  }
+}
+
+// 新版通知API - 收藏通知
+export const favoriteNotificationApi = {
+  // 获取收藏通知列表
+  getList: (page: number = 1, size: number = 20) => {
+    return get<any>(`/notification/favorite/list`, { page, size })
+  },
+
+  // 获取未读数量
+  getUnreadCount: () => {
+    return get<number>('/notification/favorite/unread-count')
+  },
+
+  // 标记已读
+  markAsRead: (notificationId: number) => {
+    return post<void>(`/notification/favorite/read/${notificationId}`)
+  },
+
+  // 全部已读
+  markAllAsRead: () => {
+    return post<void>('/notification/favorite/read-all')
+  },
+
+  // 删除通知
+  deleteNotification: (notificationId: number) => {
+    return del<void>(`/notification/favorite/${notificationId}`)
+  }
+}
+
+// 新版通知API - 私信通知
+export const messageNotificationApi = {
+  // 获取私信通知列表
+  getList: (page: number = 1, size: number = 20) => {
+    return get<any>(`/notification/message/list`, { page, size })
+  },
+
+  // 获取未读数量
+  getUnreadCount: () => {
+    return get<number>('/notification/message/unread-count')
+  },
+
+  // 标记已读
+  markAsRead: (notificationId: number) => {
+    return post<void>(`/notification/message/read/${notificationId}`)
+  },
+
+  // 全部已读
+  markAllAsRead: () => {
+    return post<void>('/notification/message/read-all')
+  },
+
+  // 删除通知（逻辑删除）
+  deleteNotification: (notificationId: number) => {
+    return del<void>(`/notification/message/${notificationId}`)
+  }
+}
+
+// 新版通知API - 粉丝通知
+export const followerNotificationApi = {
+  // 获取粉丝通知列表
+  getList: (page: number = 1, size: number = 20) => {
+    return get<any>(`/notification/follower/list`, { page, size })
+  },
+
+  // 获取未读数量
+  getUnreadCount: () => {
+    return get<number>('/notification/follower/unread-count')
+  },
+
+  // 标记已读
+  markAsRead: (notificationId: number) => {
+    return post<void>(`/notification/follower/read/${notificationId}`)
+  },
+
+  // 全部已读
+  markAllAsRead: () => {
+    return post<void>('/notification/follower/read-all')
+  },
+
+  // 删除通知
+  deleteNotification: (notificationId: number) => {
+    return del<void>(`/notification/follower/${notificationId}`)
+  }
+}
+
 // 订阅相关API
 export const subscriptionApi = {
   // 获取创作者的订阅配置

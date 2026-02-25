@@ -57,7 +57,7 @@
         >
           <!-- 头像 -->
           <image 
-            :src="comment.avatar || '/static/default-avatar.svg'" 
+            :src="comment.fromUserAvatar || '/static/default-avatar.svg'" 
             class="comment-avatar" 
             mode="aspectFill"
           />
@@ -65,36 +65,34 @@
           <!-- 内容 -->
           <view class="comment-content">
             <view class="comment-header">
-              <text class="comment-nickname">{{ comment.nickname || '用户' }}</text>
+              <text class="comment-nickname">{{ comment.fromUserNickname || '用户' }}</text>
               <text class="comment-time">{{ formatTime(comment.createdAt) }}</text>
             </view>
             
             <!-- 收到的评论显示原文 -->
             <view v-if="activeTab === 'received'" class="comment-original">
               <text class="original-label">回复了我的笔记：</text>
-              <text class="original-content">{{ comment.note?.title || '笔记' }}</text>
+              <text class="original-content">{{ comment.noteTitle || '笔记' }}</text>
             </view>
             
-            <text class="comment-text">{{ comment.content }}</text>
-            
-            <!-- 点赞 -->
-            <view class="comment-actions">
-              <view class="action-item" @click.stop="toggleLike(comment)">
-                <svg width="16" height="16" viewBox="0 0 24 24" :fill="comment.isLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-                <text>{{ comment.likeCount || 0 }}</text>
-              </view>
-            </view>
+            <text class="comment-text">{{ comment.commentContent || '' }}</text>
           </view>
           
           <!-- 笔记封面 -->
           <image 
-            v-if="comment.note?.coverUrl" 
-            :src="comment.note.coverUrl" 
+            v-if="comment.noteCoverImage" 
+            :src="comment.noteCoverImage" 
             class="note-cover" 
             mode="aspectFill"
           />
+          
+          <!-- 删除按钮 -->
+          <view class="item-delete-btn" @click.stop="deleteComment(comment)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </view>
           
           <!-- 未读红点 -->
           <view v-if="comment.isRead === 0 && activeTab === 'received'" class="unread-dot"></view>
@@ -112,29 +110,22 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { commentApi } from '@/api/note'
+import { commentNotificationApi } from '@/api/message'
 import { useUserStore } from '@/stores/user'
 
 interface CommentWithUser {
   id: number
   noteId: number
-  userId: number
-  parentId: number
-  rootId: number
-  content: string
-  likeCount: number
-  replyCount: number
-  isLiked: boolean
+  fromUserId: number
+  toUserId: number
+  commentId: number
   isRead: number
   createdAt: string
-  nickname?: string
-  avatar?: string
-  note?: {
-    id: number
-    title: string
-    coverUrl?: string
-  }
-  replies?: CommentWithUser[]
+  fromUserNickname?: string
+  fromUserAvatar?: string
+  noteTitle?: string
+  noteCoverImage?: string
+  commentContent?: string
 }
 
 const canBack = ref(false)
@@ -160,6 +151,19 @@ const hasMore = ref(true)
 const currentPage = ref(1)
 const pageSize = 20
 const receivedUnread = ref(0)
+
+const deleteComment = async (comment: CommentWithUser) => {
+  try {
+    await commentNotificationApi.deleteNotification(comment.id)
+    const index = comments.value.findIndex(c => c.id === comment.id)
+    if (index !== -1) {
+      comments.value.splice(index, 1)
+    }
+    uni.showToast({ title: '删除成功', icon: 'success' })
+  } catch (error) {
+    uni.showToast({ title: '删除失败', icon: 'none' })
+  }
+}
 
 const formatTime = (timeStr: string): string => {
   if (!timeStr) return ''
@@ -193,25 +197,22 @@ const fetchComments = async (refresh = false) => {
   
   loading.value = true
   try {
-    if (activeTab.value === 'received') {
-      const data = await commentApi.getReceived(currentPage.value, pageSize)
-      if (data && data.length > 0) {
-        comments.value.push(...data)
-        hasMore.value = data.length === pageSize
+    // 使用新的通知API获取评论通知列表
+    const result = await commentNotificationApi.getList(currentPage.value, pageSize)
+    // 处理分页数据
+    const records = result?.records || result?.data || []
+    if (records && records.length > 0) {
+      if (refresh) {
+        comments.value = records
       } else {
-        hasMore.value = false
+        comments.value.push(...records)
       }
+      hasMore.value = records.length === pageSize
     } else {
-      const data = await commentApi.getSent(currentPage.value, pageSize)
-      if (data && data.length > 0) {
-        comments.value.push(...data)
-        hasMore.value = data.length === pageSize
-      } else {
-        hasMore.value = false
-      }
+      hasMore.value = false
     }
   } catch (error) {
-    console.error('获取评论失败:', error)
+    console.error('获取评论通知失败:', error)
     uni.showToast({ title: '加载失败', icon: 'none' })
   } finally {
     loading.value = false
@@ -226,15 +227,13 @@ const loadMore = () => {
 }
 
 const handleCommentClick = async (comment: CommentWithUser) => {
-  console.log('点击评论，isRead:', comment.isRead, 'type:', typeof comment.isRead)
+  console.log('点击评论通知，isRead:', comment.isRead, 'type:', typeof comment.isRead)
   // 标记已读
   if ((comment.isRead === 0 || comment.isRead === false || !comment.isRead) && activeTab.value === 'received') {
     try {
-      await commentApi.markAsRead(comment.id)
+      await commentNotificationApi.markAsRead(comment.id)
       comment.isRead = 1
       receivedUnread.value = Math.max(0, receivedUnread.value - 1)
-      // 刷新列表
-      fetchComments(true)
       // 通知首页刷新未读数
       uni.$emit('refreshUnreadCount')
     } catch (e) {
@@ -270,7 +269,7 @@ onMounted(async () => {
   fetchComments(true)
   // 获取未读数
   try {
-    const count = await commentApi.getReceivedCount()
+    const count = await commentNotificationApi.getUnreadCount()
     receivedUnread.value = count || 0
   } catch (e) {
     console.error('获取未读数失败:', e)
@@ -412,6 +411,14 @@ onMounted(async () => {
   padding: 0;
 }
 
+.delete-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  flex-shrink: 0;
+}
+
 .comment-item {
   display: flex;
   padding: 16px;
@@ -526,11 +533,24 @@ onMounted(async () => {
 .unread-dot {
   position: absolute;
   top: 18px;
-  right: 16px;
+  right: 8px;
   width: 8px;
   height: 8px;
   background: #FF3B30;
   border-radius: 50%;
+}
+
+.item-delete-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  z-index: 20;
 }
 
 .load-more {

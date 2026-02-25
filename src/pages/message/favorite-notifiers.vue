@@ -38,7 +38,7 @@
         >
           <!-- 头像 -->
           <image 
-            :src="fav.user?.avatar || '/static/default-avatar.svg'" 
+            :src="fav.fromUserAvatar || '/static/default-avatar.svg'" 
             class="fav-avatar" 
             mode="aspectFill"
           />
@@ -46,22 +46,30 @@
           <!-- 内容 -->
           <view class="fav-content">
             <view class="fav-header">
-              <text class="fav-nickname">{{ fav.nickname || '用户' }}</text>
+              <text class="fav-nickname">{{ fav.fromUserNickname || '用户' }}</text>
               <text class="fav-time">{{ formatTime(fav.createdAt) }}</text>
             </view>
             <view class="fav-action">
               <text class="action-text">收藏了我的笔记</text>
             </view>
-            <text class="fav-note-title">{{ fav.title || '笔记' }}</text>
+            <text class="fav-note-title">{{ fav.noteTitle || '笔记' }}</text>
           </view>
           
           <!-- 笔记封面 -->
           <image 
-            v-if="fav.coverImage" 
-            :src="fav.coverImage" 
+            v-if="fav.noteCoverImage" 
+            :src="fav.noteCoverImage" 
             class="note-cover" 
             mode="aspectFill"
           />
+          
+          <!-- 删除按钮 -->
+          <view class="item-delete-btn" @click.stop="deleteFavoriteRecord(fav)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </view>
           
           <!-- 未读红点 -->
           <view v-if="fav.isRead === 0" class="unread-dot"></view>
@@ -79,7 +87,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { favoriteApi } from '@/api/note'
+import { favoriteNotificationApi } from '@/api/message'
 import { useUserStore } from '@/stores/user'
 
 const canBack = ref(false)
@@ -99,14 +107,16 @@ const goBack = () => {
 
 interface FavoriteWithUser {
   id: number
-  userId: number
+  fromUserId: number
+  toUserId: number
   noteId: number
+  favoriteId: number
   isRead: number
   createdAt: string
-  nickname?: string
-  avatar?: string
-  title?: string
-  coverImage?: string
+  fromUserNickname?: string
+  fromUserAvatar?: string
+  noteTitle?: string
+  noteCoverImage?: string
 }
 
 const userStore = useUserStore()
@@ -115,6 +125,19 @@ const loading = ref(false)
 const hasMore = ref(true)
 const currentPage = ref(1)
 const pageSize = 20
+
+const deleteFavoriteRecord = async (fav: FavoriteWithUser) => {
+  try {
+    await favoriteNotificationApi.deleteNotification(fav.id)
+    const index = favorites.value.findIndex(f => f.id === fav.id)
+    if (index !== -1) {
+      favorites.value.splice(index, 1)
+    }
+    uni.showToast({ title: '删除成功', icon: 'success' })
+  } catch (error) {
+    uni.showToast({ title: '删除失败', icon: 'none' })
+  }
+}
 
 const formatTime = (timeStr: string): string => {
   if (!timeStr) return ''
@@ -129,20 +152,32 @@ const formatTime = (timeStr: string): string => {
   return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
 }
 
-const fetchFavorites = async () => {
+const fetchFavorites = async (refresh = false) => {
   if (loading.value) return
+  
+  if (refresh) {
+    currentPage.value = 1
+    favorites.value = []
+  }
   
   loading.value = true
   try {
-    const data = await favoriteApi.getMyNoteFavorites(currentPage.value, pageSize)
-    if (data && data.length > 0) {
-      favorites.value.push(...data)
-      hasMore.value = data.length === pageSize
+    // 使用新的通知API获取收藏通知列表
+    const result = await favoriteNotificationApi.getList(currentPage.value, pageSize)
+    // 处理分页数据
+    const records = result?.records || result?.data || []
+    if (records && records.length > 0) {
+      if (refresh) {
+        favorites.value = records
+      } else {
+        favorites.value.push(...records)
+      }
+      hasMore.value = records.length === pageSize
     } else {
       hasMore.value = false
     }
   } catch (error) {
-    console.error('获取收藏记录失败:', error)
+    console.error('获取收藏通知失败:', error)
     uni.showToast({ title: '加载失败', icon: 'none' })
   } finally {
     loading.value = false
@@ -157,14 +192,12 @@ const loadMore = () => {
 }
 
 const handleFavoriteClick = async (fav: FavoriteWithUser) => {
-  console.log('点击收藏，isRead:', fav.isRead, 'type:', typeof fav.isRead)
+  console.log('点击收藏通知，isRead:', fav.isRead, 'type:', typeof fav.isRead)
   // 标记已读
   if (fav.isRead === 0 || fav.isRead === false || !fav.isRead) {
     try {
-      await favoriteApi.markFavoriteAsRead(fav.id)
+      await favoriteNotificationApi.markAsRead(fav.id)
       fav.isRead = 1
-      // 刷新列表
-      fetchFavorites()
       // 通知首页刷新未读数
       uni.$emit('refreshUnreadCount')
     } catch (error) {
@@ -269,6 +302,15 @@ onMounted(() => {
   padding: 0;
 }
 
+.delete-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
 .favorite-item {
   display: flex;
   align-items: center;
@@ -356,6 +398,19 @@ onMounted(() => {
   height: 8px;
   background: #FF3B30;
   border-radius: 50%;
+}
+
+.item-delete-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  z-index: 20;
 }
 
 .load-more {
