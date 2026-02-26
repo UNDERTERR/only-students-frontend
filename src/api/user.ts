@@ -86,5 +86,15 @@ export const userApi = {
   // 更新用户信息
   updateUser: (data: UpdateUserRequest) => {
     return put<UserInfo>('/user', data)
+  },
+
+  // 验证码重置密码
+  resetPasswordByCode: (data: { account: string; verifyCode: string; newPassword: string }) => {
+    return post<void>('/user/reset-password', data)
+  },
+
+  // 修改密码（需要旧密码）
+  changePassword: (data: { oldPassword: string; newPassword: string }) => {
+    return post<void>('/user/change-password', data)
   }
 }

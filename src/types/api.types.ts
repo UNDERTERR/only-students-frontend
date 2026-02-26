@@ -57,7 +57,7 @@ export interface RegisterRequest {
   schoolId?: number
 }
 
-export type SendCodeType = 'REGISTER' | 'LOGIN' | 'RESET_PASSWORD'
+export type SendCodeType = 'REGISTER' | 'LOGIN' | 'RESET_PASSWORD' | 'BIND'
 
 // 发送验证码请求
 export interface SendCodeRequest {
@@ -75,6 +75,7 @@ export interface UpdateUserRequest {
   educationLevel?: number
   schoolId?: number
   schoolName?: string
+  verifyCode?: string
 }
 
 // 笔记相关类型

@@ -1,5 +1,121 @@
 <template>
   <view class="edit-profile-page">
+    <!-- 自定义裁剪弹窗 -->
+    <view class="crop-modal-mask" v-if="cropModalVisible" @click="closeCropModal">
+      <view class="crop-modal" @click.stop>
+        <view class="crop-header">
+          <text class="crop-title">裁剪头像</text>
+          <view class="crop-actions">
+            <text class="crop-cancel" @click="closeCropModal">取消</text>
+            <text class="crop-confirm" @click="confirmCrop">完成</text>
+          </view>
+        </view>
+        <view class="crop-container">
+          <view class="crop-wrapper" :style="{ transform: `scale(${cropScale})` }">
+            <image 
+              :src="cropImagePath" 
+              class="crop-image"
+              mode="aspectFit"
+            />
+          </view>
+          <!-- 可拖拽的裁剪框 -->
+          <view 
+            class="crop-frame"
+            :style="{
+              left: cropFrameX + 'px',
+              top: cropFrameY + 'px',
+              width: cropFrameSize + 'px',
+              height: cropFrameSize + 'px'
+            }"
+            @touchstart="onFrameTouchStart"
+            @touchmove="onFrameTouchMove"
+            @touchend="onFrameTouchEnd"
+          >
+            <!-- 四个角落拖拽手柄 -->
+            <view 
+              class="crop-handle tl" 
+              @touchstart.stop="onHandleTouchStart($event, 'tl')"
+              @touchmove.stop="onHandleTouchMove"
+              @touchend.stop="onHandleTouchEnd"
+            ></view>
+            <view 
+              class="crop-handle tr" 
+              @touchstart.stop="onHandleTouchStart($event, 'tr')"
+              @touchmove.stop="onHandleTouchMove"
+              @touchend.stop="onHandleTouchEnd"
+            ></view>
+            <view 
+              class="crop-handle bl" 
+              @touchstart.stop="onHandleTouchStart($event, 'bl')"
+              @touchmove.stop="onHandleTouchMove"
+              @touchend.stop="onHandleTouchEnd"
+            ></view>
+            <view 
+              class="crop-handle br" 
+              @touchstart.stop="onHandleTouchStart($event, 'br')"
+              @touchmove.stop="onHandleTouchMove"
+              @touchend.stop="onHandleTouchEnd"
+            ></view>
+            <!-- 四边拖拽手柄 -->
+            <view 
+              class="crop-handle t" 
+              @touchstart.stop="onHandleTouchStart($event, 't')"
+              @touchmove.stop="onHandleTouchMove"
+              @touchend.stop="onHandleTouchEnd"
+            ></view>
+            <view 
+              class="crop-handle b" 
+              @touchstart.stop="onHandleTouchStart($event, 'b')"
+              @touchmove.stop="onHandleTouchMove"
+              @touchend.stop="onHandleTouchEnd"
+            ></view>
+            <view 
+              class="crop-handle l" 
+              @touchstart.stop="onHandleTouchStart($event, 'l')"
+              @touchmove.stop="onHandleTouchMove"
+              @touchend.stop="onHandleTouchEnd"
+            ></view>
+            <view 
+              class="crop-handle r" 
+              @touchstart.stop="onHandleTouchStart($event, 'r')"
+              @touchmove.stop="onHandleTouchMove"
+              @touchend.stop="onHandleTouchEnd"
+            ></view>
+          </view>
+        </view>
+        <view class="crop-footer">
+          <view class="crop-zoom">
+            <text class="zoom-label">缩放</text>
+            <slider 
+              :value="cropScale * 100" 
+              @change="onZoomChange"
+              min="50" 
+              max="200" 
+              activeColor="#E07B54"
+              block-color="#E07B54"
+              block-size="18"
+              class="zoom-slider"
+            />
+            <text class="zoom-value">{{ Math.round(cropScale * 100) }}%</text>
+          </view>
+          <view class="crop-size">
+            <text class="size-label">裁剪框大小</text>
+            <slider 
+              :value="cropFrameSize" 
+              @change="onSizeChange"
+              min="100" 
+              max="280" 
+              activeColor="#E07B54"
+              block-color="#E07B54"
+              block-size="18"
+              class="size-slider"
+            />
+            <text class="size-value">{{ cropFrameSize }}px</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <view class="page-nav">
       <view class="back-btn" @click="goBack">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -35,33 +151,19 @@
         </view>
 
         <view class="form-item">
-          <text class="label">昵称</text>
-          <input
-            type="text"
-            v-model="form.nickname"
-            placeholder="请输入昵称"
-            class="input"
-          />
-        </view>
-
-        <view class="form-item">
           <text class="label">邮箱</text>
-          <input
-            type="text"
-            v-model="form.email"
-            placeholder="请输入邮箱"
-            class="input"
-          />
+          <view class="readonly-field" @click="goToSettings">
+            <text class="readonly-value">{{ form.email || '未绑定' }}</text>
+            <text class="readonly-tip">请在设置中绑定</text>
+          </view>
         </view>
 
         <view class="form-item">
           <text class="label">手机号</text>
-          <input
-            type="number"
-            v-model="form.phone"
-            placeholder="请输入手机号"
-            class="input"
-          />
+          <view class="readonly-field" @click="goToSettings">
+            <text class="readonly-value">{{ form.phone || '未绑定' }}</text>
+            <text class="readonly-tip">请在设置中绑定</text>
+          </view>
         </view>
 
         <view class="form-item">
@@ -118,7 +220,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
-import { uploadAvatar,userApi } from '@/api/index'
+import { uploadAvatar, cropImage, userApi } from '@/api/index'
 
 const userStore = useUserStore()
 
@@ -163,24 +265,229 @@ const onEducationChange = (e: any) => {
   form.value.educationLevel = e.detail.value + 1
 }
 
-const changeAvatar = async () => {
+// 裁剪功能状态
+const cropModalVisible = ref(false)
+const cropImagePath = ref('')
+const cropScale = ref(1)
+const cropFrameX = ref(50)
+const cropFrameY = ref(50)
+const cropFrameSize = ref(200)
 
+// 拖拽状态
+let isDragging = false
+let isResizing = false
+let resizeHandle = ''
+let dragStartX = 0
+let dragStartY = 0
+let frameStartX = 0
+let frameStartY = 0
+let frameStartSize = 0
+
+const closeCropModal = () => {
+  cropModalVisible.value = false
+  cropImagePath.value = ''
+  cropScale.value = 1
+}
+
+const confirmCrop = async () => {
+  try {
+    uni.showLoading({ title: '裁剪中...' })
+    
+    const result = await cropImage({
+      imageUrl: cropImagePath.value,
+      x: cropFrameX.value,
+      y: cropFrameY.value,
+      width: cropFrameSize.value,
+      height: cropFrameSize.value,
+      scale: cropScale.value
+    })
+    
+    form.value.avatar = result.fileUrl
+    uni.showToast({ title: '更换成功', icon: 'success' })
+  } catch (err) {
+    uni.showToast({ title: '裁剪失败', icon: 'none' })
+    console.error(err)
+  } finally {
+    uni.hideLoading()
+    closeCropModal()
+  }
+}
+
+const onZoomChange = (e: any) => {
+  cropScale.value = e.detail.value / 100
+}
+
+const onSizeChange = (e: any) => {
+  cropFrameSize.value = e.detail.value
+}
+
+const onFrameTouchStart = (e: TouchEvent) => {
+  isDragging = true
+  dragStartX = e.touches[0].clientX
+  dragStartY = e.touches[0].clientY
+  frameStartX = cropFrameX.value
+  frameStartY = cropFrameY.value
+}
+
+const onFrameTouchMove = (e: TouchEvent) => {
+  if (!isDragging) return
+  const dx = e.touches[0].clientX - dragStartX
+  const dy = e.touches[0].clientY - dragStartY
+  cropFrameX.value = Math.max(0, Math.min(frameStartX + dx, 300 - cropFrameSize.value))
+  cropFrameY.value = Math.max(0, Math.min(frameStartY + dy, 400 - cropFrameSize.value))
+}
+
+const onFrameTouchEnd = () => {
+  isDragging = false
+}
+
+const onHandleTouchStart = (e: TouchEvent, handle: string) => {
+  e.stopPropagation()
+  isResizing = true
+  resizeHandle = handle
+  dragStartX = e.touches[0].clientX
+  dragStartY = e.touches[0].clientY
+  frameStartX = cropFrameX.value
+  frameStartY = cropFrameY.value
+  frameStartSize = cropFrameSize.value
+}
+
+const onHandleTouchMove = (e: TouchEvent) => {
+  if (!isResizing) return
+  e.stopPropagation()
+  const moveX = e.touches[0].clientX - dragStartX
+  const moveY = e.touches[0].clientY - dragStartY
+  
+  let newSize = frameStartSize
+  let newX = frameStartX
+  let newY = frameStartY
+  
+  switch (resizeHandle) {
+    case 'br':
+      newSize = Math.max(100, Math.min(frameStartSize + moveX, 280))
+      newSize = Math.max(100, Math.min(newSize + moveY, 280))
+      break
+    case 'bl':
+      newSize = Math.max(100, Math.min(frameStartSize - moveX, 280))
+      newX = frameStartX + (frameStartSize - newSize)
+      newSize = Math.max(100, Math.min(newSize + moveY, 280))
+      break
+    case 'tr':
+      newSize = Math.max(100, Math.min(frameStartSize + moveX, 280))
+      newY = frameStartY + (frameStartSize - newSize)
+      newSize = Math.max(100, Math.min(newSize - moveY, 280))
+      break
+    case 'tl':
+      newSize = Math.max(100, Math.min(frameStartSize - moveX, 280))
+      newX = frameStartX + (frameStartSize - newSize)
+      newSize = Math.max(100, Math.min(newSize - moveY, 280))
+      newY = frameStartY + (frameStartSize - newSize)
+      break
+    case 'r':
+      newSize = Math.max(100, Math.min(frameStartSize + moveX, 280))
+      break
+    case 'l':
+      newSize = Math.max(100, Math.min(frameStartSize - moveX, 280))
+      newX = frameStartX + (frameStartSize - newSize)
+      break
+    case 'b':
+      newSize = Math.max(100, Math.min(frameStartSize + moveY, 280))
+      break
+    case 't':
+      newSize = Math.max(100, Math.min(frameStartSize - moveY, 280))
+      newY = frameStartY + (frameStartSize - newSize)
+      break
+  }
+  
+  cropFrameSize.value = newSize
+  cropFrameX.value = Math.max(0, newX)
+  cropFrameY.value = Math.max(0, newY)
+}
+
+const onHandleTouchEnd = () => {
+  isResizing = false
+}
+
+const changeAvatar = async () => {
   try {
     // 1. 选择图片
     const res = await uni.chooseImage({ count: 1 })
-
-
     const tempFilePath = res.tempFilePaths[0]
-    // 显示加载中
+
+    // 2. 询问用户是否裁剪
+    const shouldCrop = await new Promise<boolean>((resolve) => {
+      uni.showActionSheet({
+        itemList: ['裁剪图片', '不裁剪直接使用'],
+        success: (res) => {
+          resolve(res.tapIndex === 0)
+        },
+        fail: () => {
+          resolve(false)
+        }
+      })
+    })
+
+    if (shouldCrop) {
+      // 检查是否支持系统裁剪
+      if (typeof uni.cropImage === 'function') {
+        try {
+          const cropRes = await new Promise<any>((resolve, reject) => {
+            uni.cropImage({
+              src: tempFilePath,
+              success: (res) => resolve(res),
+              fail: (err) => reject(err),
+              width: 300,
+              height: 300,
+              scale: 1
+            })
+          })
+          await uploadAndSaveAvatar(cropRes.tempFilePath)
+        } catch (cropErr: any) {
+          if (cropErr?.errMsg?.includes('cancel')) {
+            return
+          }
+          // 裁剪失败使用原图
+          await uploadAndSaveAvatar(tempFilePath)
+        }
+      } else {
+        // 不支持系统裁剪，使用自定义裁剪弹窗
+        // 先上传图片获取真实URL
+        uni.showLoading({ title: '上传中...' })
+        try {
+          const uploadResult = await uploadAvatar(tempFilePath)
+          cropImagePath.value = uploadResult.fileUrl
+          cropScale.value = 1
+          cropFrameX.value = 50
+          cropFrameY.value = 50
+          cropFrameSize.value = 200
+          cropModalVisible.value = true
+        } catch (uploadErr) {
+          uni.showToast({ title: '上传失败', icon: 'none' })
+        } finally {
+          uni.hideLoading()
+        }
+      }
+    } else {
+      // 不裁剪，直接使用原图
+      await uploadAndSaveAvatar(tempFilePath)
+    }
+
+  } catch (err: any) {
+    // 用户取消不提示错误
+    if (err?.errMsg?.includes('cancel')) {
+      return
+    }
+    uni.showToast({ title: '选择图片失败', icon: 'none' })
+    console.error(err)
+  }
+}
+
+const uploadAndSaveAvatar = async (filePath: string) => {
+  try {
     uni.showLoading({ title: '上传中...' })
-
-    // 2. 上传文件到服务器，获取URL
-    const file = await uploadAvatar(tempFilePath)
-
+    const file = await uploadAvatar(filePath)
     form.value.avatar = file.fileUrl
-
     uni.showToast({ title: '更换成功', icon: 'success' })
-
   } catch (err) {
     uni.showToast({ title: '上传失败了', icon: 'none' })
     console.error(err)
@@ -231,6 +538,10 @@ const saveProfile = async () => {
 
 const goBack = () => {
   uni.navigateBack()
+}
+
+const goToSettings = () => {
+  uni.navigateTo({ url: '/pages/user/settings' })
 }
 </script>
 
@@ -336,6 +647,24 @@ const goBack = () => {
   color: var(--text-tertiary);
 }
 
+.readonly-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+
+.readonly-value {
+  font-size: 15px;
+  color: var(--text-tertiary);
+}
+
+.readonly-tip {
+  font-size: 12px;
+  color: var(--accent-warm);
+}
+
 .textarea {
   width: 100%;
   height: 100px;
@@ -399,5 +728,164 @@ const goBack = () => {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.crop-modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+  z-index: 1000;
+}
+
+.crop-modal {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.crop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+}
+
+.crop-title {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.crop-actions {
+  display: flex;
+  gap: 20px;
+}
+
+.crop-cancel {
+  font-size: 16px;
+  color: #999;
+}
+
+.crop-confirm {
+  font-size: 16px;
+  color: #E07B54;
+  font-weight: 600;
+}
+
+.crop-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.crop-wrapper {
+  width: 280px;
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s;
+}
+
+.crop-image {
+  width: 280px;
+  height: 280px;
+  max-width: 280px;
+  max-height: 280px;
+}
+
+.crop-frame {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border: 2px solid #E07B54;
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  touch-action: none;
+}
+
+.crop-handle {
+  position: absolute;
+  background: #E07B54;
+}
+
+.crop-handle.tl,
+.crop-handle.tr,
+.crop-handle.bl,
+.crop-handle.br {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.crop-handle.tl { top: -10px; left: -10px; cursor: nwse-resize; }
+.crop-handle.tr { top: -10px; right: -10px; cursor: nesw-resize; }
+.crop-handle.bl { bottom: -10px; left: -10px; cursor: nesw-resize; }
+.crop-handle.br { bottom: -10px; right: -10px; cursor: nwse-resize; }
+
+.crop-handle.t,
+.crop-handle.b {
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 10px;
+}
+
+.crop-handle.t { top: -5px; cursor: ns-resize; }
+.crop-handle.b { bottom: -5px; cursor: ns-resize; }
+
+.crop-handle.l,
+.crop-handle.r {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 30px;
+}
+
+.crop-handle.l { left: -5px; cursor: ew-resize; }
+.crop-handle.r { right: -5px; cursor: ew-resize; }
+
+.crop-footer {
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.crop-zoom,
+.crop-size {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.crop-size {
+  margin-bottom: 0;
+}
+
+.zoom-label,
+.size-label {
+  color: #999;
+  font-size: 14px;
+}
+
+.zoom-slider,
+.size-slider {
+  flex: 1;
+}
+
+.zoom-value,
+.size-value {
+  color: white;
+  font-size: 14px;
+  min-width: 45px;
+  text-align: right;
 }
 </style>

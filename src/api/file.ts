@@ -164,3 +164,37 @@ export const getFileConvertStatus = (fileId: number): Promise<ConvertStatusResul
     })
   })
 }
+
+export interface CropImageParams {
+  imageUrl: string
+  x: number
+  y: number
+  width: number
+  height: number
+  scale?: number
+}
+
+export const cropImage = (params: CropImageParams): Promise<FileUploadResult> => {
+  return new Promise((resolve, reject) => {
+    const token = uni.getStorageSync('token')
+    const header: Record<string, string> = {
+      'Content-Type': 'application/json'
+    }
+    if (token) header['Authorization'] = `Bearer ${token}`
+
+    uni.request({
+      url: `${API_BASE_URL}/file/crop-image`,
+      method: 'POST',
+      header,
+      data: params,
+      success: (res: any) => {
+        if (res.data.code === 200) {
+          resolve(res.data.data)
+        } else {
+          reject(new Error(res.data.message || '裁剪图片失败'))
+        }
+      },
+      fail: reject
+    })
+  })
+}

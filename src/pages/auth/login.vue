@@ -119,6 +119,79 @@
         </view>
       </view>
 
+      <!-- 忘记密码弹窗 -->
+      <view class="bind-modal-mask" v-if="forgotModalVisible" @click="closeForgotModal">
+        <view class="bind-modal" @click.stop>
+          <view class="bind-modal-header">
+            <text class="bind-modal-title">忘记密码</text>
+            <view class="bind-modal-close" @click="closeForgotModal">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </view>
+          </view>
+          <view class="bind-modal-body">
+            <view class="bind-input-group">
+              <text class="bind-label">账号（手机号或邮箱）</text>
+              <input
+                type="text"
+                v-model="forgotForm.account"
+                placeholder="请输入手机号或邮箱"
+                class="bind-input"
+              />
+              <text v-if="forgotAccountError" class="bind-error">{{ forgotAccountError }}</text>
+            </view>
+            <view class="bind-input-group">
+              <text class="bind-label">验证码</text>
+              <view class="bind-code-row">
+                <input
+                  type="text"
+                  v-model="forgotForm.code"
+                  placeholder="请输入验证码"
+                  class="bind-input bind-code-input"
+                />
+                <button
+                  class="bind-code-btn"
+                  :class="{ disabled: forgotCountdown > 0 }"
+                  @click="sendForgotCode"
+                  :disabled="forgotCountdown > 0"
+                >
+                  {{ forgotCountdown > 0 ? `${forgotCountdown}s` : '获取验证码' }}
+                </button>
+              </view>
+              <text v-if="forgotCodeError" class="bind-error">{{ forgotCodeError }}</text>
+            </view>
+            <view class="bind-input-group">
+              <text class="bind-label">新密码</text>
+              <input
+                type="password"
+                v-model="forgotForm.newPassword"
+                placeholder="请输入新密码"
+                class="bind-input"
+              />
+              <text class="input-hint">密码长度为6-20个字符</text>
+            </view>
+            <view class="bind-input-group">
+              <text class="bind-label">确认密码</text>
+              <input
+                type="password"
+                v-model="forgotForm.confirmPassword"
+                placeholder="请再次输入新密码"
+                class="bind-input"
+              />
+              <text v-if="forgotPwdError" class="bind-error">{{ forgotPwdError }}</text>
+            </view>
+          </view>
+          <view class="bind-modal-footer">
+            <button class="bind-cancel-btn" @click="closeForgotModal">取消</button>
+            <button class="bind-confirm-btn" :class="{ loading: forgotLoading }" @click="submitForgotPassword" :disabled="forgotLoading">
+              <text v-if="!forgotLoading">重置密码</text>
+              <view v-else class="btn-spinner"></view>
+            </button>
+          </view>
+        </view>
+      </view>
+
       <!-- 其他登录方式 -->
       <view class="other-login">
         <view class="divider">
@@ -161,6 +234,21 @@ const form = ref({
 const loading = ref(false)
 const rememberMe = ref(false)
 const countdown = ref(0)
+
+// 忘记密码状态
+const forgotModalVisible = ref(false)
+const forgotForm = ref({
+  account: '',
+  code: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+const forgotLoading = ref(false)
+const forgotCountdown = ref(0)
+const forgotAccountError = ref('')
+const forgotCodeError = ref('')
+const forgotPwdError = ref('')
+let forgotCountdownTimer: ReturnType<typeof setInterval> | null = null
 
 const isFormValid = computed(() => {
   if (!form.value) return false
@@ -285,7 +373,109 @@ const goToRegister = () => {
 }
 
 const forgotPassword = () => {
-  uni.showToast({ title: '功能开发中', icon: 'none' })
+  forgotForm.value = { account: '', code: '', newPassword: '', confirmPassword: '' }
+  forgotAccountError.value = ''
+  forgotCodeError.value = ''
+  forgotPwdError.value = ''
+  forgotModalVisible.value = true
+}
+
+const closeForgotModal = () => {
+  forgotModalVisible.value = false
+  if (forgotCountdownTimer) {
+    clearInterval(forgotCountdownTimer)
+    forgotCountdownTimer = null
+  }
+  forgotCountdown.value = 0
+}
+
+const sendForgotCode = async () => {
+  const account = forgotForm.value.account.trim()
+  forgotAccountError.value = ''
+  
+  if (!account) {
+    forgotAccountError.value = '请输入手机号或邮箱'
+    return
+  }
+
+  const isPhone = /^1[3-9]\d{9}$/.test(account)
+  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account)
+  
+  if (!isPhone && !isEmail) {
+    forgotAccountError.value = '请输入正确的手机号或邮箱'
+    return
+  }
+
+  try {
+    await userApi.sendCode({
+      account,
+      type: 'RESET_PASSWORD' as any
+    })
+    uni.showToast({ title: '验证码已发送', icon: 'success' })
+    
+    forgotCountdown.value = 60
+    forgotCountdownTimer = setInterval(() => {
+      forgotCountdown.value--
+      if (forgotCountdown.value <= 0 && forgotCountdownTimer) {
+        clearInterval(forgotCountdownTimer)
+        forgotCountdownTimer = null
+      }
+    }, 1000)
+  } catch (error: any) {
+    forgotAccountError.value = error.message || '发送失败'
+  }
+}
+
+const submitForgotPassword = async () => {
+  const account = forgotForm.value.account.trim()
+  const code = forgotForm.value.code.trim()
+  const newPassword = forgotForm.value.newPassword
+  const confirmPassword = forgotForm.value.confirmPassword
+
+  forgotCodeError.value = ''
+  forgotPwdError.value = ''
+
+  if (!account) {
+    forgotAccountError.value = '请输入手机号或邮箱'
+    return
+  }
+
+  if (!code) {
+    forgotCodeError.value = '请输入验证码'
+    return
+  }
+
+  if (!newPassword) {
+    forgotPwdError.value = '请输入新密码'
+    return
+  }
+
+  if (newPassword.length < 6) {
+    forgotPwdError.value = '密码长度不能少于6位'
+    return
+  }
+
+  if (newPassword !== confirmPassword) {
+    forgotPwdError.value = '两次输入的密码不一致'
+    return
+  }
+
+  forgotLoading.value = true
+
+  try {
+    await userApi.resetPasswordByCode({
+      account,
+      verifyCode: code,
+      newPassword
+    })
+    
+    uni.showToast({ title: '密码重置成功，请使用新密码登录', icon: 'success' })
+    closeForgotModal()
+  } catch (error: any) {
+    forgotCodeError.value = error.message || '重置失败'
+  } finally {
+    forgotLoading.value = false
+  }
 }
 
 const wechatLogin = () => {
@@ -614,5 +804,170 @@ checkRememberedUser()
 
 .history-delete:active {
   color: var(--accent-coral);
+}
+
+.bind-modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.bind-modal {
+  width: 85%;
+  max-width: 340px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.bind-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.bind-modal-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.bind-modal-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+}
+
+.bind-modal-body {
+  padding: 20px;
+}
+
+.bind-input-group {
+  margin-bottom: 16px;
+}
+
+.bind-input-group:last-child {
+  margin-bottom: 0;
+}
+
+.bind-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.bind-input {
+  width: 100%;
+  height: 44px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 15px;
+  color: var(--text-primary);
+  box-sizing: border-box;
+  border: 1px solid transparent;
+}
+
+.bind-input:focus {
+  border-color: var(--accent-warm);
+}
+
+.bind-error {
+  font-size: 12px;
+  color: #F44336;
+  margin-top: 6px;
+  display: block;
+}
+
+.input-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+  display: block;
+}
+
+.bind-code-row {
+  display: flex;
+  gap: 10px;
+}
+
+.bind-code-input {
+  flex: 1;
+}
+
+.bind-code-btn {
+  width: 110px;
+  height: 44px;
+  background: linear-gradient(135deg, var(--accent-warm), var(--accent-coral));
+  color: white;
+  font-size: 13px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+}
+
+.bind-code-btn[disabled] {
+  background: var(--bg-secondary);
+  color: var(--text-tertiary);
+}
+
+.bind-modal-footer {
+  display: flex;
+  border-top: 1px solid var(--border-light);
+}
+
+.bind-cancel-btn,
+.bind-confirm-btn {
+  flex: 1;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border: none;
+  background: transparent;
+  margin: 0;
+  padding: 0;
+}
+
+.bind-cancel-btn {
+  color: var(--text-secondary);
+  border-right: 1px solid var(--border-light);
+}
+
+.bind-confirm-btn {
+  color: var(--accent-warm);
+  font-weight: 600;
+}
+
+.btn-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--accent-warm);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>
