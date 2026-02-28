@@ -7,28 +7,28 @@
     <view class="category-bar">
       <!-- 固定项组 -->
       <view class="category-fixed">
-        <view 
-          class="category-item" 
+        <view
+          class="category-item"
           :class="{ active: activeCategory === 'all' }"
           @click="selectCategory('all')"
         >
           全部
         </view>
         <view class="category-divider"></view>
-        <view 
-          class="category-item" 
+        <view
+          class="category-item"
           :class="{ active: activeCategory === 'school' }"
           @click="selectCategory('school')"
         >
           我的学校
         </view>
       </view>
-      
+
       <!-- 快捷标签滚动区 -->
       <scroll-view scroll-x class="category-scroll" :show-scrollbar="false" :enable-flex="true">
         <view class="category-tags">
-          <view 
-            v-for="(tag, index) in quickTags" 
+          <view
+            v-for="(tag, index) in quickTags"
             :key="index"
             class="category-item tag-item"
             :class="{ active: activeTag === tag }"
@@ -39,7 +39,7 @@
           </view>
         </view>
       </scroll-view>
-      
+
       <!-- 添加标签按钮 -->
       <view class="add-tag-btn" @click="showAddTagModal">
         <text>+</text>
@@ -54,10 +54,10 @@
           <text class="modal-close" @click="closeAddTagModal">×</text>
         </view>
         <view class="modal-body">
-          <input 
-            v-model="newTagName" 
-            class="tag-input" 
-            placeholder="输入标签名称" 
+          <input
+            v-model="newTagName"
+            class="tag-input"
+            placeholder="输入标签名称"
             maxlength="10"
             focus
           />
@@ -160,13 +160,13 @@ const selectTag = (tag: string) => {
 // 根据筛选条件获取笔记
 const fetchWithFilters = async () => {
   const loading = ref(false)
-  
+
   if (loading.value) return
   loading.value = true
-  
+
   try {
     let notes: Note[] = []
-    
+
     if (activeCategory.value === 'all' && !activeTag.value) {
       // 获取全部笔记
       notes = await noteApi.getLatest(20)
@@ -185,7 +185,7 @@ const fetchWithFilters = async () => {
       const result = await searchApi.searchNotes({ keyword: activeTag.value, page: 1, size: 20 })
       notes = result.list
     }
-    
+
     noteStore.notes = notes
   } catch (error) {
     console.error('获取笔记失败:', error)
@@ -294,16 +294,17 @@ const scrollToTop = () => {
   min-height: 100vh;
   background: var(--bg-primary);
   padding-top: 60px;
-  padding-bottom: calc(48px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  display: flex;
+  flex-direction: column;
 }
 
-/* 分类筛选栏 */
 .category-bar {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 0px 12px;
+    background: var(--bg-primary);
 }
 
 .category-scroll {
@@ -506,8 +507,8 @@ const scrollToTop = () => {
 }
 
 .content-area {
-  height: calc(100vh - 160px - env(safe-area-inset-bottom) - 45px);
-  padding-top: 10px;
+  flex: 1;
+  overflow-y: scroll;
   padding-bottom: 20px;
 }
 

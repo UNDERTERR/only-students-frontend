@@ -77,17 +77,15 @@ const switchTab = (index: number) => {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 48px;
+  height: 60px;
   background: var(--bg-card);
   border-top: 1px solid var(--border-light);
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: calc(env(safe-area-inset-bottom) / 2);
   z-index: 9999;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-  isolation: isolate;
-  transform: translateZ(0);
+  box-sizing: border-box;
 }
 
 .tab-item {

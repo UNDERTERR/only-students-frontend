@@ -113,6 +113,7 @@ body {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -120,14 +121,37 @@ body {
 }
 
 /* 交错动画 */
-.waterfall-item:nth-child(1) { animation-delay: 0s; }
-.waterfall-item:nth-child(2) { animation-delay: 0.05s; }
-.waterfall-item:nth-child(3) { animation-delay: 0.1s; }
-.waterfall-item:nth-child(4) { animation-delay: 0.15s; }
-.waterfall-item:nth-child(5) { animation-delay: 0.2s; }
-.waterfall-item:nth-child(6) { animation-delay: 0.25s; }
-.waterfall-item:nth-child(7) { animation-delay: 0.3s; }
-.waterfall-item:nth-child(8) { animation-delay: 0.35s; }
+.waterfall-item:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.waterfall-item:nth-child(2) {
+  animation-delay: 0.05s;
+}
+
+.waterfall-item:nth-child(3) {
+  animation-delay: 0.1s;
+}
+
+.waterfall-item:nth-child(4) {
+  animation-delay: 0.15s;
+}
+
+.waterfall-item:nth-child(5) {
+  animation-delay: 0.2s;
+}
+
+.waterfall-item:nth-child(6) {
+  animation-delay: 0.25s;
+}
+
+.waterfall-item:nth-child(7) {
+  animation-delay: 0.3s;
+}
+
+.waterfall-item:nth-child(8) {
+  animation-delay: 0.35s;
+}
 
 /* 笔记卡片 */
 .note-card {
@@ -286,15 +310,13 @@ body {
   left: 0;
   right: 0;
   height: 60px;
+  /* border-bottom: 1px solid var(--border-light); */
   background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 8px 16px;
   z-index: 100;
-  backdrop-filter: blur(20px);
-  background: rgba(var(--bg-primary), 0.9);
 }
 
 .nav-logo {
@@ -383,7 +405,7 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 64px;
+  height: 60px;
   background: var(--bg-card);
   border-top: 1px solid var(--border-light);
   display: flex;
@@ -426,20 +448,23 @@ body {
 
 /* 加载动画 */
 .loading-skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--bg-secondary) 25%,
-    var(--bg-hover) 50%,
-    var(--bg-secondary) 75%
-  );
+  background: linear-gradient(90deg,
+      var(--bg-secondary) 25%,
+      var(--bg-hover) 50%,
+      var(--bg-secondary) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-md);
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* 分类筛选 */

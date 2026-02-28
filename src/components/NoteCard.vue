@@ -98,6 +98,8 @@ const formatNumber = (num: number): string => {
   overflow: hidden;
   box-shadow: var(--shadow-soft);
   transition: all var(--transition-medium);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .note-card:active {
@@ -145,15 +147,15 @@ const formatNumber = (num: number): string => {
 }
 
 .note-content {
-  padding: 12px;
+  padding: 10px;
 }
 
 .note-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  line-height: 1.5;
-  margin-bottom: 8px;
+  line-height: 1.4;
+  margin-bottom: 6px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -195,6 +197,11 @@ const formatNumber = (num: number): string => {
 .author-name {
   font-size: 12px;
   color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 40px;
+  flex-shrink: 0;
 }
 
 .note-stats {
@@ -206,7 +213,7 @@ const formatNumber = (num: number): string => {
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-size: 11px;
   color: var(--text-tertiary);
 }

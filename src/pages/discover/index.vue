@@ -58,8 +58,8 @@
     <template v-else>
       <!-- 结果分类 Tab -->
       <view class="result-tabs">
-        <view 
-          v-for="tab in tabs" 
+        <view
+          v-for="tab in tabs"
           :key="tab.key"
           :class="['tab-item', { active: currentTab === tab.key }]"
           @click="switchTab(tab.key)"
@@ -75,10 +75,10 @@
       </view>
 
       <!-- 综合结果 -->
-      <scroll-view 
-        v-else-if="currentTab === 'all'" 
-        scroll-y 
-        class="result-list" 
+      <scroll-view
+        v-else-if="currentTab === 'all'"
+        scroll-y
+        class="result-list"
         @scrolltolower="loadMore"
       >
         <!-- 用户结果（前3个） -->
@@ -89,22 +89,22 @@
           </view>
           <scroll-view scroll-x class="user-scroll" show-scrollbar="false">
             <view class="user-list">
-              <view 
-                v-for="user in userResults.slice(0, 5)" 
+              <view
+                v-for="user in userResults.slice(0, 5)"
                 :key="user.id"
                 class="user-card"
                 @click="goToUserProfile(user.id)"
               >
-                <image 
-                  :src="user.avatar || '/static/default-avatar.svg'" 
+                <image
+                  :src="user.avatar || '/static/default-avatar.svg'"
                   class="user-avatar"
                   mode="aspectFill"
                 />
                 <text class="user-name">{{ user.nickname || user.username }}</text>
                 <text class="user-bio" v-if="user.bio">{{ user.bio.substring(0, 10) }}...</text>
-                <view 
+                <view
                   v-if="user.id !== currentUserId"
-                  class="follow-btn-mini" 
+                  class="follow-btn-mini"
                   :class="{ following: user.isFollowing }"
                   @click.stop="toggleFollow(user)"
                 >
@@ -121,23 +121,23 @@
             <text class="section-title">相关笔记</text>
           </view>
           <view class="note-grid">
-            <view 
-              v-for="note in noteResults" 
+            <view
+              v-for="note in noteResults"
               :key="note.id"
               class="note-card"
               @click="goToNoteDetail(note.id)"
             >
-              <image 
-                v-if="note.coverImage" 
-                :src="note.coverImage" 
+              <image
+                v-if="note.coverImage"
+                :src="note.coverImage"
                 class="note-cover"
                 mode="aspectFill"
               />
               <view class="note-content">
                 <rich-text class="note-title" :nodes="note.title ? note.title.replace(/<em>/g, '<span style=\'color: #FF6B6B; font-weight: 600;\'>').replace(/<\/em>/g, '</span>') : ''"></rich-text>
                 <view class="note-author">
-                  <image 
-                    :src="note.authorAvatar || '/static/default-avatar.svg'" 
+                  <image
+                    :src="note.authorAvatar || '/static/default-avatar.svg'"
                     class="author-avatar"
                   />
                   <text class="author-name">{{ note.authorName }}</text>
@@ -154,30 +154,30 @@
       </scroll-view>
 
       <!-- 笔记列表 -->
-      <scroll-view 
-        v-else-if="currentTab === 'notes'" 
-        scroll-y 
-        class="result-list" 
+      <scroll-view
+        v-else-if="currentTab === 'notes'"
+        scroll-y
+        class="result-list"
         @scrolltolower="loadMore"
       >
         <view v-if="noteResults.length > 0" class="note-grid">
-          <view 
-            v-for="note in noteResults" 
+          <view
+            v-for="note in noteResults"
             :key="note.id"
             class="note-card"
             @click="goToNoteDetail(note.id)"
           >
-            <image 
-              v-if="note.coverImage" 
-              :src="note.coverImage" 
+            <image
+              v-if="note.coverImage"
+              :src="note.coverImage"
               class="note-cover"
               mode="aspectFill"
             />
             <view class="note-content">
               <rich-text class="note-title" :nodes="note.title ? note.title.replace(/<em>/g, '<span style=\'color: #FF6B6B; font-weight: 600;\'>').replace(/<\/em>/g, '</span>') : ''"></rich-text>
               <view class="note-author">
-                <image 
-                  :src="note.authorAvatar || '/static/default-avatar.svg'" 
+                <image
+                  :src="note.authorAvatar || '/static/default-avatar.svg'"
                   class="author-avatar"
                 />
                 <text class="author-name">{{ note.authorName }}</text>
@@ -191,21 +191,21 @@
       </scroll-view>
 
       <!-- 用户列表 -->
-      <scroll-view 
-        v-else-if="currentTab === 'users'" 
-        scroll-y 
-        class="result-list" 
+      <scroll-view
+        v-else-if="currentTab === 'users'"
+        scroll-y
+        class="result-list"
         @scrolltolower="loadMore"
       >
         <view v-if="userResults.length > 0" class="user-list-full">
-          <view 
-            v-for="user in userResults" 
+          <view
+            v-for="user in userResults"
             :key="user.id"
             class="user-item"
             @click="goToUserProfile(user.id)"
           >
-            <image 
-              :src="user.avatar || '/static/default-avatar.svg'" 
+            <image
+              :src="user.avatar || '/static/default-avatar.svg'"
               class="user-avatar-large"
               mode="aspectFill"
             />
@@ -216,8 +216,8 @@
                 {{ formatNumber(user.subscriberCount) }} 粉丝
               </text>
             </view>
-            <view 
-              class="follow-btn" 
+            <view
+              class="follow-btn"
               :class="{ following: user.isFollowing }"
               v-if="user.id !== currentUserId"
               @click.stop="toggleFollow(user)"
@@ -294,27 +294,27 @@ const onSearchFocus = () => {
 // 开始搜索
 const startSearch = async () => {
   if (!searchKeyword.value.trim()) return
-  
+
   hasSearched.value = true
   isSearching.value = false
   currentPage.value = 1
   hasMore.value = true
   currentTab.value = 'all'
-  
+
   await performSearch()
 }
 
 // 执行搜索
 const performSearch = async () => {
   loading.value = true
-  
+
   try {
     // 根据当前 Tab 决定搜索范围
     const fetchNotes = currentTab.value !== 'users'
     const fetchUsers = currentTab.value !== 'notes'
-    
+
     const promises = []
-    
+
     if (fetchNotes) {
       promises.push(
         searchApi.searchNotes({
@@ -324,7 +324,7 @@ const performSearch = async () => {
         }).catch(() => ({ list: [], total: 0 }))
       )
     }
-    
+
     if (fetchUsers) {
       promises.push(
         searchApi.searchUsers({
@@ -334,9 +334,9 @@ const performSearch = async () => {
         }).catch(() => ({ list: [], total: 0 }))
       )
     }
-    
+
     const results = await Promise.all(promises)
-    
+
     if (currentPage.value === 1) {
       if (fetchNotes) {
         noteResults.value = results[0]?.list || []
@@ -354,13 +354,13 @@ const performSearch = async () => {
         userResults.value.push(...(results[userIndex]?.list || []))
       }
     }
-    
+
     // 判断是否还有更多
     const noteTotal = fetchNotes ? results[0]?.total || 0 : 0
     const userTotal = fetchUsers ? (fetchNotes ? results[1]?.total : results[0]?.total) || 0 : 0
     const totalLoaded = noteResults.value.length + userResults.value.length
     hasMore.value = totalLoaded < (noteTotal + userTotal)
-    
+
   } catch (error) {
     console.error('搜索失败:', error)
     uni.showToast({ title: '搜索失败', icon: 'none' })
@@ -443,7 +443,7 @@ const formatNumber = (num: number): string => {
 
 onMounted(() => {
   fetchHotTags()
-  
+
   // 检查 URL 参数，如果有 keyword 则自动搜索
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1]
@@ -474,6 +474,7 @@ onMounted(() => {
   flex: 1;
   display: flex;
   align-items: center;
+    border: 1px solid var(--border-light);
   background: var(--bg-secondary);
   border-radius: 18px;
   padding: 0 12px;

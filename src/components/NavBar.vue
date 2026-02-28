@@ -5,17 +5,11 @@
     <!-- #endif -->
     <!-- 搜索框 -->
     <view class="search-bar">
-      <input
-        type="text"
-        class="search-input"
-        placeholder="搜索笔记、创作者..."
-        v-model="searchKeyword"
-        @focus="goToSearch"
-        @confirm="handleSearch"
-      />
+      <input type="text" class="search-input" placeholder="搜索笔记、创作者..." v-model="searchKeyword" @focus="goToSearch"
+        @confirm="handleSearch" />
       <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="8"/>
-        <path d="M21 21l-4.35-4.35"/>
+        <circle cx="11" cy="11" r="8" />
+        <path d="M21 21l-4.35-4.35" />
       </svg>
     </view>
 
@@ -24,8 +18,8 @@
       <!-- 消息 -->
       <view class="nav-icon" @click="goToMessages">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-          <polyline points="22,6 12,13 2,6"/>
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+          <polyline points="22,6 12,13 2,6" />
         </svg>
         <view v-if="unreadCount > 0" class="badge">{{ unreadCount }}</view>
       </view>
@@ -45,13 +39,11 @@ const searchKeyword = ref('')
 const unreadCount = ref(0)
 let refreshInterval: ReturnType<typeof setInterval> | null = null
 
-const isDark = computed(() => themeStore.isDark)
-
 // 获取未读消息数（所有模块的总和）
 const fetchUnreadCount = async () => {
   try {
     let total = 0
-    
+
     // 通知未读数
     try {
       const notificationCount = await notificationApi.getUnreadCount()
@@ -59,7 +51,7 @@ const fetchUnreadCount = async () => {
     } catch (e) {
       console.error('获取通知未读数失败:', e)
     }
-    
+
     // 收藏未读数
     try {
       const favoriteCount = await favoriteApi.getMyNoteFavoriteUnreadCount()
@@ -67,7 +59,7 @@ const fetchUnreadCount = async () => {
     } catch (e) {
       console.error('获取收藏未读数失败:', e)
     }
-    
+
     // 私信未读数
     try {
       const result = await messageApi.getConversations()
@@ -77,7 +69,7 @@ const fetchUnreadCount = async () => {
     } catch (e) {
       console.error('获取私信未读数失败:', e)
     }
-    
+
     // 粉丝未读数
     try {
       const followerCount = await subscriptionApi.getNewFollowerCount()
@@ -85,7 +77,7 @@ const fetchUnreadCount = async () => {
     } catch (e) {
       console.error('获取粉丝未读数失败:', e)
     }
-    
+
     // 评论未读数
     try {
       const commentCount = await commentApi.getReceivedCount()
@@ -93,7 +85,7 @@ const fetchUnreadCount = async () => {
     } catch (e) {
       console.error('获取评论未读数失败:', e)
     }
-    
+
     unreadCount.value = total
   } catch (error) {
     console.error('获取未读消息数失败:', error)
@@ -103,11 +95,11 @@ const fetchUnreadCount = async () => {
 onMounted(() => {
   const token = uni.getStorageSync('token')
   const userId = uni.getStorageSync('userId')
-  
+
   if (token && userId) {
     // 初始获取未读数
     fetchUnreadCount()
-    
+
     // 每30秒刷新一次
     refreshInterval = setInterval(fetchUnreadCount, 30000)
   }
@@ -161,11 +153,11 @@ const goToMessages = () => {
   right: 0;
   height: 60px;
   background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
+  /* border-bottom: 1px solid var(--border-light); */
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 8px 16px;
   z-index: 1000;
 }
 
