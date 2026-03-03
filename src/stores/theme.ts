@@ -20,8 +20,10 @@ export const useThemeStore = defineStore('theme', () => {
   // 应用主题
   const applyTheme = () => {
     const theme = isDark.value ? 'dark' : 'light'
-    document.documentElement.setAttribute('data-theme', theme)
     uni.setStorageSync('theme', theme)
+    // #ifdef H5
+    document.documentElement.setAttribute('data-theme', theme)
+    // #endif
   }
   
   // 切换主题
